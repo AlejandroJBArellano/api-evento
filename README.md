@@ -2,6 +2,9 @@
 
 This README would normally document whatever steps are necessary to get your application up and running.
 
+### How to install MongoDB on Ubuntu
+https://docs.mongodb.com/manual/tutorial/install-mongodb-on-ubuntu/
+
 ### What is this repository for? ###
 
 * Quick summary
