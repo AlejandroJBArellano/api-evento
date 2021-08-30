@@ -1,0 +1,40 @@
+###
+POST http://localhost:3000/new-user HTTP/1.1
+content-type: application/json
+
+{
+    "registeringUserId": 1,
+    "email": "jesusarellano334@gmail.com",
+    "first_name": "Alejandro",
+    "identification_img_url": "google.com",
+    "identification_img_file_name": "google.com",
+    "last_name": "Bach",
+    "mobile_number": "Bach",
+    "badge": "Bach",
+    "adminuser": "Bach",
+    "adminpassword": "Bach",
+    "adminsub": "Bach",
+    "arrivaldate": "Bach",
+    "accessdate": "Bach",
+    "limitdate": "Bach",
+    "user_role": {
+        "role": "role"
+    },
+    "organization_role": {  
+        "region": "Bach",
+        "zona": "Bach",
+        "distrito": "Bach",
+        "tienda": "Bach",
+        "area": "Bach",
+        "role": "Bach"
+    }
+}
+
+###
+GET http://localhost:3000/tienda/Bach/user/ba
+
+###
+GET http://localhost:3000/region/Bach/user/ba
+
+###
+GET http://localhost:3000/user/612d3b0ec1740d85b02b96b7
