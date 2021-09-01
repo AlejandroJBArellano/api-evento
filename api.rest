@@ -8,10 +8,10 @@ content-type: application/json
     "first_name": "Alejandro",
     "identification_img_url": "google.com",
     "identification_img_file_name": "google.com",
-    "last_name": "Bach",
-    "mobile_number": "Bach",
+    "last_name": "Bautista",
+    "mobile_number": "4521590132",
     "badge": "Bach",
-    "adminuser": "Bach",
+    "adminuser": "AdminUser",
     "adminpassword": "Bach",
     "adminsub": "Bach",
     "arrivaldate": "Bach",
@@ -37,4 +37,47 @@ GET http://localhost:3000/tienda/Bach/user/ba
 GET http://localhost:3000/region/Bach/user/ba
 
 ###
-GET http://localhost:3000/user/612d3b0ec1740d85b02b96b7
+GET http://localhost:3000/user/612eab594504803c9b6d6ed6
+
+###
+POST http://localhost:3000/new-store HTTP/1.1
+content-type: application/json
+
+{
+    "region": "Mexico",
+    "zona": "La Magdalena",
+    "distrito": "Federal",
+    "tienda": "Merza"
+}
+
+###
+GET http://localhost:3000/stores HTTP/1.1
+
+###
+GET http://localhost:3000/stores?region=México&zona=La%20Magdalena HTTP/1.1
+
+
+###
+GET http://localhost:3000/stores/?region=Mexico&zona=La%20Magdalena&distrito=Federal HTTP/1.1 
+
+###
+POST http://localhost:3000/tag_id-user HTTP/1.1
+Content-Type: application/json
+
+{
+    "tag_id": "142514",
+    "id": "612eab594504803c9b6d6ed6"
+}
+
+###
+GET http://localhost:3000/tag_id-user/142514 HTTP/1.1
+
+###
+POST http://localhost:3000/new-entrance HTTP/1.1
+Content-Type: application/json
+
+{
+    "tag_id": "1",
+    "id_lectora": "1",
+    "event_type": "entrada"
+}
