@@ -65,19 +65,105 @@ POST http://localhost:3000/tag_id-user HTTP/1.1
 Content-Type: application/json
 
 {
-    "tag_id": "142514",
-    "id": "612eab594504803c9b6d6ed6"
+    "tag_id": "13",
+    "id": "612fedeb5ddbe68fdaa59eda"
 }
 
 ###
-GET http://localhost:3000/tag_id-user/142514 HTTP/1.1
+GET http://localhost:3000/tag_id-user/13 HTTP/1.1
 
 ###
 POST http://localhost:3000/new-entrance HTTP/1.1
 Content-Type: application/json
 
 {
-    "tag_id": "1",
+    "tag_id": "13",
     "id_lectora": "1",
     "event_type": "entrada"
+}
+
+###
+GET http://localhost:3000/questionnaries HTTP/1.1
+
+###
+GET http://localhost:3000/questionnaries?track=4 HTTP/1.1
+
+###
+POST http://localhost:3000/questionnarie HTTP/1.1
+Content-Type: application/json
+
+{
+    "track": 4,
+    "preguntas": [
+        {
+            "pregunta": "La función trim() modifica el objeto sobre el cual se invoca.",
+            "respuesta_correcta": false
+        },
+        {
+            "pregunta": "La función trim() modifica el objeto sobre el cual se invoca.",
+            "respuesta_correcta": false
+        },
+        {
+            "pregunta": "Node JS es un buen lenguaje.",
+            "respuesta_correcta": true
+        },
+        {
+            "pregunta": "Node JS es un buen lenguaje.",
+            "respuesta_correcta": true
+        }
+    ]
+}
+
+###
+POST http://localhost:3000/admonitions HTTP/1.1
+Content-Type: application/json
+
+[
+    {
+        "tag-id": "1",
+        "points": -1,
+        "id_lectora": "3"
+    },    {
+        "tag-id": "2",
+        "points": 1,
+        "id_lectora": "3"
+    },    {
+        "tag-id": "3",
+        "points": -1,
+        "id_lectora": "3"
+    },    {
+        "tag-id": "1",
+        "points": 1,
+        "id_lectora": "3"
+    }
+]
+
+###
+POST http://localhost:3000/answers HTTP/1.1
+Content-Type: application/json
+
+{
+    "track": 4,
+    "preguntas": [
+        {
+            "pregunta": "La función trim() modifica el objeto sobre el cual se invoca.",
+            "respuesta_correcta": false,
+            "respuesta_usuario":true
+        },
+        {
+            "pregunta": "La función trim() modifica el objeto sobre el cual se invoca.",
+            "respuesta_correcta": false,
+            "respuesta_usuario":true
+        },
+        {
+            "pregunta": "Node JS es un buen lenguaje.",
+            "respuesta_correcta": true,
+            "respuesta_usuario":true
+        },
+        {
+            "pregunta": "Node JS es un buen lenguaje.",
+            "respuesta_correcta": true,
+            "respuesta_usuario":true
+        }
+    ]
 }

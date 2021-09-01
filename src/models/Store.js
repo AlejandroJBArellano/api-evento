@@ -17,6 +17,8 @@ const Store = new Schema({
         type: String,
         required: true
     }
+}, {
+    versionKey: false
 })
 
 module.exports = model("Store", Store)
