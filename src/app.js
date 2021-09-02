@@ -32,44 +32,20 @@ app.post("/new-user", async (req, res) => {
 })
 
 // Second sprint: find users by store and first letters of the last name
-app.get("/tienda/:store", async(req,res) => {
-    try {
-        const {store} = req.params
-        const users = await User.find({
-            "organization_role.tienda": store
-        })
-        if(users.length === 0){
-            res.json({mensaje: "No se encontró la tienda"})
-            return;
-        }
-        res.json(users)
-    } catch (error) {
-        console.log(error);
-        res.json({mensaje: "Ocurrió un error. Vuelve a intentarlo"})
-    }
-})
 
-app.get("/tienda/:storeName/user/:name", async (req, res) => {
-    try {        
-        const { storeName, name } = req.params
-        const founded = await User.find({
-            "organization_role.tienda": storeName
-        });
-        if(founded.length === 0){
-            res.json({mensaje: "No se encontró la tienda"})
-            return;
-        }
-        let respuesta = [];
-        founded.forEach(e => {
-            if(e.first_name.toLowerCase().startsWith(name) || e.last_name.toLowerCase().startsWith(name)){
-                respuesta.push(e)
+app.get("/tienda", async (req, res) => {
+    try {
+        const users = await User.find({
+            "organization_role.tienda": req.query.tienda
+        })
+        const response = []
+        users.forEach((e) => {
+            if(e.first_name.toLowerCase().startsWith(req.query.user) || 
+            e.last_name.toLowerCase().startsWith(req.query.user)) {
+                response.push(e)
             }
         })
-        if(respuesta.length === 0) {
-            res.json({mensaje: "No se encontró ningún usuario en esta tienda que coincida con la búsqueda."})
-            return;
-        }
-        res.json(respuesta)
+        res.json(response)
     } catch (error) {
         console.log(error);
         res.json({mensaje: "Ocurrió un error. Vuelve a intentarlo"})
@@ -78,43 +54,20 @@ app.get("/tienda/:storeName/user/:name", async (req, res) => {
 
 
 // Second sprint: find users by store and first letters of the last name
-app.use("/region/:regionName", async (req, res) => {
-    try {        
-        const users = await User.find({
-            "organization_role.region": req.params.regionName
-        })
-        if(users.length === 0){
-            res.json({mensaje: "No se encontró la región"})
-            return;
-        }
-        res.json(users)
-    } catch (error) {
-        console.log(error);
-        res.json({mensaje: "Ocurrió un error. Vuelve a intentarlo"})
-    }
-})
 
-app.get("/region/:regionName/user/:name", async (req, res) => {
-    try {        
-        const { regionName, name } = req.params
-        const founded = await User.find({
-            "organization_role.region": regionName
-        });
-        if(founded.length === 0){
-            res.json({mensaje: "No se encontró la región"})
-            return;
-        }
-        let respuesta = [];
-        founded.forEach(e => {
-            if(e.first_name.toLowerCase().startsWith(name) || e.last_name.toLowerCase().startsWith(name)){
-                respuesta.push(e)
-            }
+app.get("/region", async (req, res) => {
+    try {       
+        const users = await User.find({
+            "organization_role.region": req.query.region
         })
-        if(respuesta.length === 0) {
-            res.json({mensaje: "No se encontró ningún usuario en esta tienda que coincida con la búsqueda."})
-            return;
-        }
-        res.json(respuesta)
+        const response = []
+        users.forEach((e) => {
+            if(e.first_name.toLowerCase().startsWith(req.query.user) || 
+            e.last_name.toLowerCase().startsWith(req.query.user)) {
+                response.push(e)
+            }
+        res.json(response)
+    })
     } catch (error) {
         console.log(error);
         res.json({mensaje: "Ocurrió un error. Vuelve a intentarlo"})
@@ -161,7 +114,6 @@ app.get("/stores", async (req, res) => {
             query.region = region
         }
         const stores = await Store.find(query)
-        console.log(req.query)
         res.json(stores)
         return;
     }
@@ -172,31 +124,29 @@ app.get("/stores", async (req, res) => {
 app.post("/tag_id-user", async (req, res) => {
     const theUser = User.findById(req.body.id)
         .then(async (respuesta) => {
+            var target = {};
+            for (var i in respuesta._doc) {
+              if (["_id"].indexOf(i) >= 0) continue;
+              if (!Object.prototype.hasOwnProperty.call(respuesta._doc, i)) continue;
+              target[i] = respuesta._doc[i];
+            }
             const newUserTagId = new UserTagId({
                 tag_id: req.body.tag_id,
-                user_id: respuesta._id
+                ...target
             })
             await newUserTagId.save()
-            console.log(newUserTagId)
             res.json(newUserTagId)
         })
 })
 
 
 // Fourth sprint: get a user by giving it a tag_id
-app.get("/tag_id-user/:tag_id", (req, res) => {
-    const user = UserTagId.findOne({
-        tag_id: req.params.tag_id
-    }).then(async (response) => {
-        const usuario = User.findById(response.user_id).then((response) => {
-
-            res.json(response)
-        })
-        const resolved = {
-            // ...response._doc,
-            ...usuario
-        }
+app.get("/tag_id-user", async (req, res) => {
+    const user = await UserTagId.findOne({
+        tag_id: req.query.tag_id
     })
+    res.json(user)
+    return;
 })
 
 
@@ -205,18 +155,19 @@ app.post("/new-entrance", (req, res) => {
     const user = UserTagId.findOne({
         tag_id: req.body.tag_id
     }).then(async (response) => {
+        var target = {};
+        for (var i in response._doc) {
+          if (["_id"].indexOf(i) >= 0) continue;
+          if (!Object.prototype.hasOwnProperty.call(response._doc, i)) continue;
+          target[i] = response._doc[i];
+        }
         const newEntrance = new EntranceControl({
-            tag_id: req.body.tag_id,
-            user_id: response._doc._id,
+            ...target,
             id_lectora: req.body.id_lectora,
             event_type: req.body.event_type
         })
         await newEntrance.save()
-        const usuario = await User.findById(response._doc.user_id)
-        res.json({
-            ...newEntrance._doc,
-            ...usuario._doc
-        })
+        res.json(newEntrance)
     })
 })
 
@@ -250,8 +201,21 @@ app.post("/admonitions", (req, res) => {
 })
 
 // Eighth sprint: post the answers
-app.post("/answers", (req, res) => {
-    const newAnswer = new Answers(req.body);
+app.post("/answers", async (req, res) => {
+    const user = await UserTagId.findOne({
+        tag_id: req.body.tag_id
+    })
+    const target = {}
+    for (var i in user._doc) {
+        if (["_id"].indexOf(i) >= 0) continue;
+        if (!Object.prototype.hasOwnProperty.call(user._doc, i)) continue;
+        target[i] = user._doc[i];
+    }
+    const newAnswer = new Answers({
+        track: req.body.track,
+        ...target,
+        preguntas: req.body.preguntas
+    });
     newAnswer.correctas = 0;
     newAnswer.incorrectas = 0;
     const { preguntas } = req.body;

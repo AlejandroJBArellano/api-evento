@@ -5,7 +5,11 @@ const AdmonitionSchema = new Schema({
         type: String
     },
     points: Number,
-    id_lectora: String
+    id_lectora: String,
+    createdAt: { 
+        type: Date, 
+        default: Date.now 
+    }
 }, {
     versionKey: false
 });
