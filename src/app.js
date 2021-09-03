@@ -66,8 +66,8 @@ app.get("/region", async (req, res) => {
             e.last_name.toLowerCase().startsWith(req.query.user)) {
                 response.push(e)
             }
+        })
         res.json(response)
-    })
     } catch (error) {
         console.log(error);
         res.json({mensaje: "Ocurrió un error. Vuelve a intentarlo"})
@@ -191,13 +191,22 @@ app.post("/questionnarie",async (req, res) => {
 })
 
 // Seventh sprint: post many admonitions
-app.post("/admonitions", (req, res) => {
-    Admonition.insertMany(req.body)
-        .then((arr) => {
-            res.json(arr)
-        })
-        .catch(e => res.json(e))
-    return;
+app.post("/admonitions", async (req, res) => {
+    const funcion = req.body.map(async e => {
+        const user = await UserTagId.findOne({tag_id: e.tag_id})
+        var target = {};
+        for (var i in user._doc) {
+          if (["_id"].indexOf(i) >= 0) continue;
+          if (!Object.prototype.hasOwnProperty.call(user._doc, i)) continue;
+          target[i] = user._doc[i];
+        }
+        return target;
+    })
+    Promise.all(funcion).then(results => {
+        Admonition.insertMany(results)
+            .then(arr => res.json(arr))
+        return;
+    }).catch(e => console.log(e))
 })
 
 // Eighth sprint: post the answers
