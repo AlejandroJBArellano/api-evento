@@ -4,7 +4,7 @@ const AdmonitionSchema = new Schema({
     tag_id: {
         type: String
     },
-    registeringUserId: Number,
+    registered_by_user_id: Number,
     email: String,
     first_name: String,
     identification_img_url: String,

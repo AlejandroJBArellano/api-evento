@@ -3,11 +3,14 @@ require("dotenv").config()
 const express = require("express"),
 morgan = require("morgan"),
 router = require("./app"),
+cors = require("cors")
 
 // Inicializators
 
 app = express();
-require("./database")
+require("./database");
+// require("./exportingDatabase/getStores");
+// require("./exportingDatabase/getUsers");
 
 // Settings
 app.set("port", process.env.PORT)
@@ -16,6 +19,9 @@ app.set("port", process.env.PORT)
 app.use(morgan("dev"))
 app.use(express.json())
 app.use(express.urlencoded({ extended:false }))
+app.use(cors({
+    origin: "http://localhost:4200"
+}))
 
 //Routes
 app.use(router)

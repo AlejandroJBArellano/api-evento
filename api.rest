@@ -3,7 +3,7 @@ POST http://localhost:3000/new-user HTTP/1.1
 content-type: application/json
 
 {
-    "registeringUserId": 1,
+    "registered_by_user_id": 1,
     "email": "jesusarellano334@gmail.com",
     "first_name": "Jespus",
     "identification_img_url": "google.com",
@@ -31,10 +31,10 @@ content-type: application/json
 }
 
 ###
-GET http://localhost:3000/tienda?tienda=Bach&user=ba
+GET http://localhost:3000/tienda?tienda=681Palmas
 
 ###
-GET http://localhost:3000/region?region=Bach&user=ba
+GET http://localhost:3000/region?region=1005&users=jesus
 
 ###
 GET http://localhost:3000/user/6131578b5c6e3657d040cdaf

@@ -6,7 +6,7 @@ const UserTagIdSchema = new Schema({
         required: true,
         unique: true
     },
-    registeringUserId: Number,
+    registered_by_user_id: Number,
     email: String,
     first_name: String,
     identification_img_url: String,

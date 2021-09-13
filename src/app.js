@@ -38,14 +38,19 @@ app.get("/tienda", async (req, res) => {
         const users = await User.find({
             "organization_role.tienda": req.query.tienda
         })
+        console.log(req.query);
         const response = []
-        users.forEach((e) => {
-            if(e.first_name.toLowerCase().startsWith(req.query.user) || 
-            e.last_name.toLowerCase().startsWith(req.query.user)) {
-                response.push(e)
-            }
-        })
-        res.json(response)
+        if(req.query.users){
+            users.forEach((e) => {
+                if(e.first_name.toLowerCase().startsWith(req.query.users) || 
+                e.last_name.toLowerCase().startsWith(req.query.users)) {
+                    response.push(e)
+                }
+            })
+            res.json(response)
+        } {
+            res.json(users)
+        }
     } catch (error) {
         console.log(error);
         res.json({mensaje: "Ocurrió un error. Vuelve a intentarlo"})
@@ -61,13 +66,17 @@ app.get("/region", async (req, res) => {
             "organization_role.region": req.query.region
         })
         const response = []
-        users.forEach((e) => {
-            if(e.first_name.toLowerCase().startsWith(req.query.user) || 
-            e.last_name.toLowerCase().startsWith(req.query.user)) {
-                response.push(e)
-            }
-        })
-        res.json(response)
+        if(req.query.users){
+            users.forEach((e) => {
+                if(e.first_name.toLowerCase().startsWith(req.query.users) || 
+                e.last_name.toLowerCase().startsWith(req.query.users)) {
+                    response.push(e)
+                }
+            })
+            res.json(response)
+        } else {
+            res.json(users)
+        }
     } catch (error) {
         console.log(error);
         res.json({mensaje: "Ocurrió un error. Vuelve a intentarlo"})
@@ -200,6 +209,8 @@ app.post("/admonitions", async (req, res) => {
           if (!Object.prototype.hasOwnProperty.call(user._doc, i)) continue;
           target[i] = user._doc[i];
         }
+        target.points = e.points
+        target.id_lectora = e.id_lectora
         return target;
     })
     Promise.all(funcion).then(results => {

@@ -1,22 +1,10 @@
 const { Schema, model } = require("mongoose");
 
 const Store = new Schema({
-    region: {
-        type: String,
-        required: true
-    },
-    zona: {
-        type: String,
-        required: true
-    },
-    distrito: {
-        type: String,
-        required: true
-    },
-    tienda: {
-        type: String,
-        required: true
-    }
+    region: String,
+    zona: String,
+    distrito: String,
+    tienda:String
 }, {
     versionKey: false
 })
