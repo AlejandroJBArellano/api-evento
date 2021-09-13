@@ -9,8 +9,6 @@ cors = require("cors")
 
 app = express();
 require("./database");
-// require("./exportingDatabase/getStores");
-// require("./exportingDatabase/getUsers");
 
 // Settings
 app.set("port", process.env.PORT)
