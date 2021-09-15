@@ -128,6 +128,31 @@ app.get("/stores", async (req, res) => {
     }
 })
 
+app.get("/tag_id-users/all", async (req, res) => {
+    if(Object.keys(req.query).length === 0) {
+        const users = await UserTagId.find()
+        res.json(users)
+        return;
+    } else {
+        const { region, zona, distrito } = req.query
+        let query = {}
+        if(zona){
+            query['organization_role.zona']=zona
+        }
+        if(distrito){
+
+            query['organization_role.distrito']=distrito
+        }
+        if(region){
+            query['organization_role.region']=region
+
+        }
+        console.log("query",query);
+        const users = await UserTagId.find(query)
+        res.json(users)
+        return;
+    }
+})
 
 // Fourth sprint: embed user and tag-id
 app.post("/tag_id-user", async (req, res) => {
@@ -141,10 +166,16 @@ app.post("/tag_id-user", async (req, res) => {
             }
             const newUserTagId = new UserTagId({
                 tag_id: req.body.tag_id,
+                user_id:respuesta._id,
                 ...target
             })
-            await newUserTagId.save()
-            res.json(newUserTagId)
+            try{
+                await newUserTagId.save()
+                res.json(newUserTagId)
+            }catch(err){
+                res.status(500).json({error:err});
+            }
+            
         })
 })
 

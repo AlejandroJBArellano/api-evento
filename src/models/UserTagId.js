@@ -1,6 +1,7 @@
 const { Schema, model } = require("mongoose");
 
 const UserTagIdSchema = new Schema({
+    user_id:String,
     tag_id: {
         type: String,
         required: true,
