@@ -64,7 +64,15 @@ app.get("/region", async (req, res) => {
     try {       
         const users = await User.find({
             "organization_role.region": req.query.region
-        })
+        }).sort(
+            [
+                ['organization_role.zona',1],
+                ['organization_role.distrito',1],
+                ['user_role.role',-1],
+                ['organization_role.tienda',1],
+                ['organization_role.area',1]
+            ]
+        )
         const response = []
         if(req.query.users){
             users.forEach((e) => {
