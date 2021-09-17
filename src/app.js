@@ -252,35 +252,36 @@ app.post("/admonitions", async (req, res) => {
 })
 
 // Eighth sprint: post the answers
-app.post("/answers", async (req, res) => {
-    const user = await UserTagId.findOne({
-        tag_id: req.body.tag_id
+app.post("/answers", (req, res) => {
+    const arrayDe = req.body.map( (object, index) => {
+        UserTagId.findOne({
+            tag_id: req.body[index].tag_id
+        }).then(async respuesta => {
+            const user = respuesta._doc
+            delete user._id
+            const newAnswer = new Answers({
+                track: req.body[index].track,
+                ...user,
+                preguntas: req.body[index].preguntas
+            });
+            newAnswer.correctas = 0;
+            newAnswer.incorrectas = 0;
+            const { preguntas } = req.body[index];
+            preguntas.forEach(e => {
+                if(e.respuesta_usuario === e.respuesta_correcta) {
+                    newAnswer.correctas += 1
+                } else {
+                    newAnswer.incorrectas += 1
+                }
+            })
+            const calificacion = newAnswer.correctas / preguntas.length 
+            newAnswer.calificacion = (calificacion * 100)
+            await newAnswer.save();
+            return newAnswer
+        })
+        return object
     })
-    const target = {}
-    for (var i in user._doc) {
-        if (["_id"].indexOf(i) >= 0) continue;
-        if (!Object.prototype.hasOwnProperty.call(user._doc, i)) continue;
-        target[i] = user._doc[i];
-    }
-    const newAnswer = new Answers({
-        track: req.body.track,
-        ...target,
-        preguntas: req.body.preguntas
-    });
-    newAnswer.correctas = 0;
-    newAnswer.incorrectas = 0;
-    const { preguntas } = req.body;
-    preguntas.forEach(e => {
-        if(e.respuesta_usuario === e.respuesta_correcta) {
-            newAnswer.correctas += 1
-        } else {
-            newAnswer.incorrectas += 1
-        }
-    })
-    const calificacion = newAnswer.correctas / preguntas.length 
-    newAnswer.calificacion = (calificacion * 100)
-    newAnswer.save().then((respuesta) => res.json(respuesta))
-    return;
+    res.json(arrayDe)
 })
 
 module.exports = app;
