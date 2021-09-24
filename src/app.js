@@ -35,21 +35,25 @@ app.post("/new-user", async (req, res) => {
 
 app.get("/tienda", async (req, res) => {
     try {
-        const users = await User.find({
+        const users = await UserTagId.find({
             "organization_role.tienda": req.query.tienda
         })
-        console.log(req.query);
+        console.log(req.query)
         const response = []
-        if(req.query.users){
-            users.forEach((e) => {
-                if(e.first_name.toLowerCase().startsWith(req.query.users) || 
-                e.last_name.toLowerCase().startsWith(req.query.users)) {
-                    response.push(e)
-                }
-            })
-            res.json(response)
-        } {
-            res.json(users)
+        try {
+            if(req.query.users){
+                users.forEach((e) => {
+                    if(e.first_name.toLowerCase().startsWith(req.query.users) || 
+                    e.last_name.toLowerCase().startsWith(req.query.users)) {
+                        response.push(e)
+                    }
+                })
+                res.json(response)
+            } {
+                res.json(users)
+            }
+        } catch (error) {
+            res.json(error)
         }
     } catch (error) {
         console.log(error);
@@ -61,30 +65,46 @@ app.get("/tienda", async (req, res) => {
 // Second sprint: find users by store and first letters of the last name
 
 app.get("/region", async (req, res) => {
-    try {       
-        const users = await User.find({
-            "organization_role.region": req.query.region
-        }).sort(
-            [
-                ['organization_role.zona',1],
-                ['organization_role.distrito',1],
-                ['user_role.role',-1],
-                ['organization_role.tienda',1],
-                ['organization_role.area',1]
-            ]
-        )
-        const response = []
-        if(req.query.users){
-            users.forEach((e) => {
-                if(e.first_name.toLowerCase().startsWith(req.query.users) || 
-                e.last_name.toLowerCase().startsWith(req.query.users)) {
-                    response.push(e)
-                }
-            })
-            res.json(response)
-        } else {
-            res.json(users)
-        }
+    try {   
+
+        try {   
+            const users = await UserTagId.find({
+                "organization_role.region": req.query.region
+            }).sort(
+                [
+                    ['organization_role.zona',1],
+                    ['organization_role.distrito',1],
+                    ['user_role.role',-1],
+                    ['organization_role.tienda',1],
+                    ['organization_role.area',1]
+                ]
+            )
+
+            if(users.length === 0){
+                res.json({mensaje: "No se encontró a nadie en la búsqueda."})
+                return;
+            }
+
+            const response = []
+            
+            if(req.query.users){
+                users.forEach((e) => {
+                    if(e.first_name.toLowerCase().startsWith(req.query.users) || 
+                    e.last_name.toLowerCase().startsWith(req.query.users)) {
+                        response.push(e)
+                    }
+                })
+                res.json(response)
+                return;
+            } else {
+                res.json(users)
+                return;
+            }
+        } catch (error) {
+            res.json(error)
+            return;
+        }   
+
     } catch (error) {
         console.log(error);
         res.json({mensaje: "Ocurrió un error. Vuelve a intentarlo"})
@@ -93,9 +113,22 @@ app.get("/region", async (req, res) => {
 
 // Second sprint: find user by id
 app.get("/user/:id", async (req, res) => {
-    const {id} = req.params
-    const user = await User.findById(id)
-    res.json(user)
+    try {
+        
+        const {id} = req.params
+        const user = await User.findById(id)
+
+        if(!user) {
+            res.json({mensaje: "No se pudo encontrar al usuario. Verifica que el identificar único sea el correcto y vuelve a intentarlo."})
+            return;
+        }
+
+        res.json(user)
+        return;
+
+    } catch (error) {
+        
+    }
 })
 
 
@@ -105,59 +138,85 @@ app.post("/new-store", async (req, res) => {
         const newStore = new Store(req.body);
         await newStore.validate()
         await newStore.save()
-        res.json({message: "New Store created successfully."})
+        res.json({message: "Nueva tienda creada satisfactoriamente", ...newStore._doc})
     } catch (error) {
-        console.log(error);
-        res.json({message: "Ocurrió un error."})
+        res.json({message: "Ocurrió un error.", error})
     }
 })
 
 // Third sprint: get all stores and get stores by its zone, region or distrit
 app.get("/stores", async (req, res) => {
-    if(Object.keys(req.query).length === 0) {
-        const stores = await Store.find()
-        res.json(stores)
-        return;
-    } else {
-        const { region, zona, distrito } = req.query
-        const query = {}
-        if(zona){
-            query.zona = zona
+    try {        
+        if(Object.keys(req.query).length === 0) {
+            const stores = await Store.find()
+            res.json(stores)
+            return;
+        } else {
+            const { region, zona, distrito } = req.query
+            const query = {}
+
+            if(zona){
+                query.zona = zona
+            }
+            if(distrito){
+                query.distrito = distrito
+            }
+            if(region){
+                query.region = region
+            }
+
+            const stores = await Store.find(query)
+            
+            if(stores.length === 0) {
+                res.json({mensaje: "No se encontró ninguna tienda. Verifica tus datos y vuelve a intentarlo."})
+                return;
+            }
+            
+            res.json(stores)
+            return;
         }
-        if(distrito){
-            query.distrito = distrito
-        }
-        if(region){
-            query.region = region
-        }
-        const stores = await Store.find(query)
-        res.json(stores)
+    } catch (error) {
+        res.json(error)
         return;
     }
 })
 
 app.get("/tag_id-users/all", async (req, res) => {
-    if(Object.keys(req.query).length === 0) {
-        const users = await UserTagId.find()
-        res.json(users)
-        return;
-    } else {
-        const { region, zona, distrito } = req.query
-        let query = {}
-        if(zona){
-            query['organization_role.zona']=zona
-        }
-        if(distrito){
+    try {        
+        if(Object.keys(req.query).length === 0) {
 
-            query['organization_role.distrito']=distrito
-        }
-        if(region){
-            query['organization_role.region']=region
+            const users = await UserTagId.find()
+            res.json(users)
+            return;
+
+        } else {
+
+            const { region, zona, distrito } = req.query
+            let query = {}
+
+            if(zona){
+                query['organization_role.zona']=zona
+            }
+            if(distrito){
+                query['organization_role.distrito']=distrito
+            }
+            if(region){
+                query['organization_role.region']=region
+            }
+
+            const users = await UserTagId.find(query)
+
+            if(users.length === 0) {
+                res.json({mensaje: "No se encontró a ningún usuario. Verifica tus datos e inténtalo de nuevo"})
+                return;
+            }
+
+            res.json(users)
+            return;
 
         }
-        console.log("query",query);
-        const users = await UserTagId.find(query)
-        res.json(users)
+    } catch (error) {
+        res.json(error)
         return;
     }
 })
@@ -200,96 +259,122 @@ app.get("/tag_id-user", async (req, res) => {
 
 // Fifth sprint: create the entrance and get out
 app.post("/new-entrance", (req, res) => {
-    const user = UserTagId.findOne({
-        tag_id: req.body.tag_id
-    }).then(async (response) => {
-        var target = {};
-        for (var i in response._doc) {
-          if (["_id"].indexOf(i) >= 0) continue;
-          if (!Object.prototype.hasOwnProperty.call(response._doc, i)) continue;
-          target[i] = response._doc[i];
-        }
-        const newEntrance = new EntranceControl({
-            ...target,
-            id_lectora: req.body.id_lectora,
-            event_type: req.body.event_type
+    try {        
+        const user = UserTagId.findOne({
+            tag_id: req.body.tag_id
+        }).then(async (response) => {
+            var target = {};
+            for (var i in response._doc) {
+              if (["_id"].indexOf(i) >= 0) continue;
+              if (!Object.prototype.hasOwnProperty.call(response._doc, i)) continue;
+              target[i] = response._doc[i];
+            }
+            const newEntrance = new EntranceControl({
+                ...target,
+                id_lectora: req.body.id_lectora,
+                event_type: req.body.event_type
+            })
+            await newEntrance.save()
+            res.json(newEntrance)
         })
-        await newEntrance.save()
-        res.json(newEntrance)
-    })
+    } catch (error) {
+        res.json(error)
+        return;
+    }
 })
 
 // Sixth sprint: get array of questionnaries
 app.get("/questionnaries", async (req, res) => {
-    if (req.query) {        
-        const questionnaires = await Questionnaire.find(req.query);
+    try {        
+        if (req.query) {        
+            const questionnaires = await Questionnaire.find(req.query);
+            res.json(questionnaires)
+            return;
+        } const questionnaires = Questionnaire.find(req.query);
         res.json(questionnaires)
         return;
-    } const questionnaires = Questionnaire.find(req.query);
-    res.json(questionnaires)
-    return;
+    } catch (error) {
+        res.json(error)
+        return;
+    }
 })
 
 // Sixth sprint: post questionnarie
 app.post("/questionnarie",async (req, res) => {
-    const newQuestionnarie = new Questionnaire(req.body);
-    await newQuestionnarie.save()
-    res.json(newQuestionnarie)
-    return;
+    try {        
+        const newQuestionnarie = new Questionnaire(req.body);
+        await newQuestionnarie.save()
+        res.json(newQuestionnarie)
+        return;
+    } catch (error) {
+        res.json(error)
+        return
+    }
 })
 
 // Seventh sprint: post many admonitions
 app.post("/admonitions", async (req, res) => {
-    const funcion = req.body.map(async e => {
-        const user = await UserTagId.findOne({tag_id: e.tag_id})
-        var target = {};
-        for (var i in user._doc) {
-          if (["_id"].indexOf(i) >= 0) continue;
-          if (!Object.prototype.hasOwnProperty.call(user._doc, i)) continue;
-          target[i] = user._doc[i];
-        }
-        target.points = e.points
-        target.id_lectora = e.id_lectora
-        return target;
-    })
-    Promise.all(funcion).then(results => {
-        Admonition.insertMany(results)
-            .then(arr => res.json(arr))
+    try {        
+        const funcion = req.body.map(async e => {
+            const user = await UserTagId.findOne({tag_id: e.tag_id})
+            var target = {};
+            for (var i in user._doc) {
+              if (["_id"].indexOf(i) >= 0) continue;
+              if (!Object.prototype.hasOwnProperty.call(user._doc, i)) continue;
+              target[i] = user._doc[i];
+            }
+            target.points = e.points
+            target.id_lectora = e.id_lectora
+            return target;
+        })
+        Promise.all(funcion).then(results => {
+            Admonition.insertMany(results)
+                .then(arr => res.json(arr))
+            return;
+        }).catch(e => console.log(e))
+    } catch (error) {
+        res.json(error)
         return;
-    }).catch(e => console.log(e))
+    }
 })
 
 // Eighth sprint: post the answers
 app.post("/answers", (req, res) => {
-    const arrayDe = req.body.map( (object, index) => {
-        UserTagId.findOne({
-            tag_id: req.body[index].tag_id
-        }).then(async respuesta => {
-            const user = respuesta._doc
-            delete user._id
-            const newAnswer = new Answers({
-                track: req.body[index].track,
-                ...user,
-                preguntas: req.body[index].preguntas
-            });
-            newAnswer.correctas = 0;
-            newAnswer.incorrectas = 0;
-            const { preguntas } = req.body[index];
-            preguntas.forEach(e => {
-                if(e.respuesta_usuario === e.respuesta_correcta) {
-                    newAnswer.correctas += 1
-                } else {
-                    newAnswer.incorrectas += 1
-                }
+    try {        
+        const arrayDe = req.body.map( (object, index) => {
+            UserTagId.findOne({
+                tag_id: req.body[index].tag_id
+            }).then(async respuesta => {
+                const user = respuesta._doc
+                delete user._id
+                const newAnswer = new Answers({
+                    track: req.body[index].track,
+                    ...user,
+                    preguntas: req.body[index].preguntas
+                });
+                newAnswer.correctas = 0;
+                newAnswer.incorrectas = 0;
+                const { preguntas } = req.body[index];
+                preguntas.forEach(e => {
+                    if(e.respuesta_usuario === e.respuesta_correcta) {
+                        newAnswer.correctas += 1
+                    } else {
+                        newAnswer.incorrectas += 1
+                    }
+                })
+                const calificacion = newAnswer.correctas / preguntas.length 
+                newAnswer.calificacion = (calificacion * 100)
+                await newAnswer.save();
+                return newAnswer
             })
-            const calificacion = newAnswer.correctas / preguntas.length 
-            newAnswer.calificacion = (calificacion * 100)
-            await newAnswer.save();
-            return newAnswer
+            return object
         })
-        return object
-    })
-    res.json(arrayDe)
+        res.json(arrayDe)
+        return;
+    } catch (error) {
+        res.json(error)
+        return;
+    }
 })
 
 module.exports = app;

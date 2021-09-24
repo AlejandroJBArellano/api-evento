@@ -31,13 +31,13 @@ content-type: application/json
 }
 
 ###
-GET http://localhost:3000/tienda?tienda=681Palmas
+GET http://localhost:3000/tienda?tienda=alejandro
 
 ###
 GET http://localhost:3000/region?region=1005&users=jesus
 
 ###
-GET http://localhost:3000/user/6131578b5c6e3657d040cdaf
+GET http://localhost:3000/user/613fde279b17de34104caeac
 
 
 ###
@@ -55,7 +55,7 @@ content-type: application/json
 GET http://localhost:3000/stores HTTP/1.1
 
 ###
-GET http://localhost:3000/stores?region=México&zona=La%20Magdalena HTTP/1.1
+GET http://localhost:3000/stores?region=Mexico&zona=La%20Magdalena HTTP/1.1
 
 
 ###
