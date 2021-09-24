@@ -139,9 +139,9 @@ Content-Type: application/json
 POST http://localhost:3000/answers HTTP/1.1
 Content-Type: application/json
 
-{
+[{
     "track": 4,
-    "tag_id": "134",
+    "tag_id": "3967b749",
     "preguntas": [
         {
             "pregunta": "La función trim() modifica el objeto sobre el cual se invoca.",
@@ -164,4 +164,29 @@ Content-Type: application/json
             "respuesta_usuario":true
         }
     ]
-}
+}, {
+    "track": 4,
+    "tag_id": "39739f49",
+    "preguntas": [
+        {
+            "pregunta": "La función trim() modifica el objeto sobre el cual se invoca.",
+            "respuesta_correcta": false,
+            "respuesta_usuario":true
+        },
+        {
+            "pregunta": "La función trim() modifica el objeto sobre el cual se invoca.",
+            "respuesta_correcta": false,
+            "respuesta_usuario":true
+        },
+        {
+            "pregunta": "Node JS es un buen lenguaje.",
+            "respuesta_correcta": true,
+            "respuesta_usuario":true
+        },
+        {
+            "pregunta": "Node JS es un buen lenguaje.",
+            "respuesta_correcta": true,
+            "respuesta_usuario":true
+        }
+    ]
+}]

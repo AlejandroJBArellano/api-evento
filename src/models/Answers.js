@@ -11,8 +11,7 @@ const QuestionSchema = new Schema({
 const AnswersSchema = new Schema({
     tag_id: {
         type: String,
-        required: true,
-        unique: true
+        required: true
     },
     track: Number,
     registered_by_user_id: Number,
