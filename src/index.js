@@ -17,9 +17,7 @@ app.set("port", process.env.PORT)
 app.use(morgan("dev"))
 app.use(express.json())
 app.use(express.urlencoded({ extended:false }))
-app.use(cors({
-    origin: "http://localhost:4200"
-}))
+app.use(cors())
 
 //Routes
 app.use(router)

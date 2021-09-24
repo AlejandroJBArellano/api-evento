@@ -29,6 +29,24 @@ sudo apt-get install -y mongodb-org
 
 * Summary of set up
 * Configuration
+
+Copy source to /home/inpulse, then 
+
+```bash
+cd /home/inpulse/api-evento/
+npm install
+sudo cp api-evento.service /lib/systemd/system/
+sudo chmod 644 /lib/systemd/system/api-evento.service
+sudo systemctl daemon-reload
+sudo systemctl enable api-evento.service
+sudo reboot
+```
+
+To check logs:
+```bash
+journalctl -lf -n100 -u api-evento
+```
+
 * Dependencies
 * Database configuration
 * How to run tests
