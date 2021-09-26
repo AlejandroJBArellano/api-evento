@@ -26,7 +26,7 @@ try {
     \`registration\`.\`organization_role_tienda\`,
     \`registration\`.\`organization_role_area\`,
     \`registration\`.\`organization_role_role\`
-    FROM \`registration_db\`.\`registration\`;`
+    FROM \`registration_db\`.\`registration\` WHERE id >= 12306;`
     
     connection.query(getUsers, (err, results, fields) => {
         if(err) {

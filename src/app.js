@@ -35,7 +35,7 @@ app.post("/new-user", async (req, res) => {
 
 app.get("/tienda", async (req, res) => {
     try {
-        const users = await UserTagId.find({
+        const users = await User.find({
             "organization_role.tienda": req.query.tienda
         })
         console.log(req.query)
@@ -68,7 +68,7 @@ app.get("/region", async (req, res) => {
     try {   
 
         try {   
-            const users = await UserTagId.find({
+            const users = await User.find({
                 "organization_role.region": req.query.region
             }).sort(
                 [
