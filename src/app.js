@@ -249,11 +249,20 @@ app.post("/tag_id-user", async (req, res) => {
 
 // Fourth sprint: get a user by giving it a tag_id
 app.get("/tag_id-user", async (req, res) => {
-    const user = await UserTagId.findOne({
-        tag_id: req.query.tag_id
-    })
-    res.json(user)
-    return;
+    try {
+        const user = await UserTagId.findOne({
+            tag_id: req.query.tag_id
+        })
+        if(!user){
+            res.json({mensaje: "No se encontró al usuario, vuelve a intentarlo."})
+            return;
+        }
+        res.json(user)
+        return;
+    } catch (error) {
+        res.json(error)
+        return;
+    }
 })
 
 
@@ -290,7 +299,7 @@ app.get("/questionnaries", async (req, res) => {
             const questionnaires = await Questionnaire.find(req.query);
             res.json(questionnaires)
             return;
-        } const questionnaires = Questionnaire.find(req.query);
+        } const questionnaires = await Questionnaire.find();
         res.json(questionnaires)
         return;
     } catch (error) {
