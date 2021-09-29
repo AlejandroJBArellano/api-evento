@@ -13,6 +13,17 @@ Answers = require("./models/Answers");
 // Messages
 const message = "Success";
 
+app.get("/config-tags", (req, res) => {
+    const config = [
+        {tag_id:'661c67af',cmd:'CMD_READY'},
+        {tag_id:'5cb7cc6d',cmd:'CMD_ADD_POINTS'},
+        {tag_id:'842ad83f',cmd:'CMD_SUBSTRACT_POINTS'},
+        {tag_id:'800ed83f',cmd:'CMD_SYNC'},
+        {tag_id:'eceed73f',cmd:'CMD_SHOW_CONFIG'}
+    ]
+    res.json(config)
+})
+
 app.get("/new-user", (req, res) => {
     const hola = "Hola mundo"
     res.json(hola)
@@ -226,6 +237,7 @@ app.post("/tag_id-user", async (req, res) => {
     const theUser = User.findById(req.body.id)
         .then(async (respuesta) => {
             var target = {};
+            //TODO: not user found
             for (var i in respuesta._doc) {
               if (["_id"].indexOf(i) >= 0) continue;
               if (!Object.prototype.hasOwnProperty.call(respuesta._doc, i)) continue;
@@ -273,6 +285,7 @@ app.post("/new-entrance", (req, res) => {
             tag_id: req.body.tag_id
         }).then(async (response) => {
             var target = {};
+            //TODO: not tag id found
             for (var i in response._doc) {
               if (["_id"].indexOf(i) >= 0) continue;
               if (!Object.prototype.hasOwnProperty.call(response._doc, i)) continue;
@@ -327,11 +340,14 @@ app.post("/admonitions", async (req, res) => {
         const funcion = req.body.map(async e => {
             const user = await UserTagId.findOne({tag_id: e.tag_id})
             var target = {};
-            for (var i in user._doc) {
-              if (["_id"].indexOf(i) >= 0) continue;
-              if (!Object.prototype.hasOwnProperty.call(user._doc, i)) continue;
-              target[i] = user._doc[i];
-            }
+            //TODO: not tag id found
+            if(user){
+                for (var i in user._doc) {
+                  if (["_id"].indexOf(i) >= 0) continue;
+                  if (!Object.prototype.hasOwnProperty.call(user._doc, i)) continue;
+                  target[i] = user._doc[i];
+                }
+            }  
             target.points = e.points
             target.id_lectora = e.id_lectora
             return target;
@@ -354,6 +370,7 @@ app.post("/answers", (req, res) => {
             UserTagId.findOne({
                 tag_id: req.body[index].tag_id
             }).then(async respuesta => {
+                //TODO: not tag id found
                 const user = respuesta._doc
                 delete user._id
                 const newAnswer = new Answers({
