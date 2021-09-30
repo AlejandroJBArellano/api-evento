@@ -88,7 +88,7 @@ POST http://localhost:3000/new-entrance HTTP/1.1
 Content-Type: application/json
 
 {
-    "tag_id": "3dgfdhsfghdhbfsduh",
+    "tag_id": "3dgfdhsf",
     "id_lectora": "1",
     "event_type": "salida"
 }
