@@ -66,19 +66,29 @@ POST http://localhost:3000/tag_id-user HTTP/1.1
 Content-Type: application/json
 
 {
-    "tag_id": "1345",
+    "tag_id": "3946b549",
     "id": "612fedeb5ddbe68fdaa59eda"
 }
 
 ###
-GET http://localhost:3000/tag_id-user?tag_id=1345 HTTP/1.1
+GET http://localhost:3000/tag_id-user?tag_id=_deconoc HTTP/1.1
 
 ###
 POST http://localhost:3000/new-entrance HTTP/1.1
 Content-Type: application/json
 
 {
-    "tag_id": "134",
+    "tag_id": "3946b549",
+    "id_lectora": "1",
+    "event_type": "salida"
+}
+
+###
+POST http://localhost:3000/new-entrance HTTP/1.1
+Content-Type: application/json
+
+{
+    "tag_id": "3dgfdhsfghdhbfsduh",
     "id_lectora": "1",
     "event_type": "salida"
 }
@@ -121,17 +131,17 @@ Content-Type: application/json
 
 [
     {
-        "tag_id": "134",
+        "tag_id": "39560c49",
         "points": -1,
-        "id_lectora": "3"
+        "id_lectora": "31234"
     },    {
-        "tag_id": "13",
+        "tag_id": "13341624562",
         "points": 1,
-        "id_lectora": "3"
+        "id_lectora": "1244"
     },    {
-        "tag_id": "1345",
+        "tag_id": "39daea49",
         "points": -1,
-        "id_lectora": "3"
+        "id_lectora": "3123421"
     }
 ]
 
@@ -141,7 +151,7 @@ Content-Type: application/json
 
 [{
     "track": 4,
-    "tag_id": "3967b749",
+    "tag_id": "3967b749setyh",
     "preguntas": [
         {
             "pregunta": "La función trim() modifica el objeto sobre el cual se invoca.",

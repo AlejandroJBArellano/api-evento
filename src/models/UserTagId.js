@@ -4,8 +4,7 @@ const UserTagIdSchema = new Schema({
     user_id:String,
     tag_id: {
         type: String,
-        required: true,
-        unique: true
+        required: true
     },
     registered_by_user_id: Number,
     email: String,

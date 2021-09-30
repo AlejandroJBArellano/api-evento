@@ -234,28 +234,79 @@ app.get("/tag_id-users/all", async (req, res) => {
 
 // Fourth sprint: embed user and tag-id
 app.post("/tag_id-user", async (req, res) => {
-    const theUser = User.findById(req.body.id)
-        .then(async (respuesta) => {
-            var target = {};
-            //TODO: not user found
-            for (var i in respuesta._doc) {
-              if (["_id"].indexOf(i) >= 0) continue;
-              if (!Object.prototype.hasOwnProperty.call(respuesta._doc, i)) continue;
-              target[i] = respuesta._doc[i];
-            }
-            const newUserTagId = new UserTagId({
-                tag_id: req.body.tag_id,
-                user_id:respuesta._id,
-                ...target
-            })
-            try{
-                await newUserTagId.save()
-                res.json(newUserTagId)
-            }catch(err){
-                res.status(500).json({error:err});
-            }
-            
+    const usuarioTagId = await UserTagId.findOne({
+        tag_id: req.body.tag_id
+    })
+    if(usuarioTagId){
+        res.json({
+            mensaje: "Este usuario ya tiene vinculado un tag", 
+            ...usuarioTagId._doc
         })
+        return;
+    } else {
+        const theUser = User.findById(req.body.id)
+            .then(async (respuesta) => {
+                if(respuesta){
+                    var target = {};
+                    //TODO: not user found
+                    for (var i in respuesta._doc) {
+                      if (["_id"].indexOf(i) >= 0) continue;
+                      if (!Object.prototype.hasOwnProperty.call(respuesta._doc, i)) continue;
+                      target[i] = respuesta._doc[i];
+                    }
+                    const newUserTagId = new UserTagId({
+                        tag_id: req.body.tag_id,
+                        user_id:respuesta._id,
+                        ...target
+                    })
+                    try{
+                        await newUserTagId.save()
+                        res.json(newUserTagId)
+                    }catch(err){
+                        res.status(500).json({error:err});
+                    }
+                } else {
+                    const respuesta = {
+                        tag_id: req.body.tag_id,
+                        registered_by_user_id: 0,
+                        user_id: "_desconocido",
+                        first_name: "_desconocido",
+                        last_name: "_desconocido",
+                        email: "",
+                        identification_img_url: "",
+                        identification_img_file_name: "",
+                        mobile_number: "",
+                        badge: "",
+                        adminuser: "",
+                        adminpassword: "",
+                        adminsub: "",
+                        arrivaldate: "",
+                        accessdate: "",
+                        limitdate: "",
+                        user_role: {
+                            role: "_desconocido"
+                        },
+                        organization_role: {
+                            region: "_desconocido",
+                            zona: "_desconocido",
+                            distrito: "_desconocido",
+                            area: "_desconocido",
+    
+                        }
+                    }
+                    try {
+                        const newUserTagId = new UserTagId(respuesta);
+                        await newUserTagId.save()
+                        res.json(newUserTagId)
+                        return;
+                    } catch (error) {
+                        res.status(500).json(error)
+                        return;
+                    }
+                }
+                
+            })
+    }
 })
 
 
@@ -284,20 +335,60 @@ app.post("/new-entrance", (req, res) => {
         const user = UserTagId.findOne({
             tag_id: req.body.tag_id
         }).then(async (response) => {
-            var target = {};
-            //TODO: not tag id found
-            for (var i in response._doc) {
-              if (["_id"].indexOf(i) >= 0) continue;
-              if (!Object.prototype.hasOwnProperty.call(response._doc, i)) continue;
-              target[i] = response._doc[i];
+            if(response){
+                //! _desconocido
+                //! desconoc en caso de tag_id
+    
+                // TODO: generate empty entrance control, dependiendo de cada ruta; para esta un schema de EntranceControl
+                var target = {};
+                //TODO: not tag id found
+                for (var i in response._doc) {
+                    if (["_id"].indexOf(i) >= 0) continue;
+                    if (!Object.prototype.hasOwnProperty.call(response._doc, i)) continue;
+                    target[i] = response._doc[i];
+                }
+                const newEntrance = new EntranceControl({
+                    ...target,
+                    id_lectora: req.body.id_lectora,
+                    event_type: req.body.event_type
+                })
+                await newEntrance.save()
+                res.json(newEntrance)
+            } else {
+                const target = {
+                    tag_id: "_descono",
+                    registered_by_user_id: 0,
+                    user_id: "_desconocido",
+                    first_name: "_desconocido",
+                    last_name: "_desconocido",
+                    email: "",
+                    identification_img_url: "",
+                    identification_img_file_name: "",
+                    mobile_number: "",
+                    badge: "",
+                    adminuser: "",
+                    adminpassword: "",
+                    adminsub: "",
+                    arrivaldate: "",
+                    accessdate: "",
+                    limitdate: "",
+                    user_role: {
+                        role: "_desconocido"
+                    },
+                    organization_role: {
+                        region: "_desconocido",
+                        zona: "_desconocido",
+                        distrito: "_desconocido",
+                        area: "_desconocido",
+
+                    },
+                    id_lectora: req.body.id_lectora,
+                    event_type: req.body.event_type
+                }
+                const newEntrance = new EntranceControl(target);
+                await newEntrance.save()
+                res.json(newEntrance)
             }
-            const newEntrance = new EntranceControl({
-                ...target,
-                id_lectora: req.body.id_lectora,
-                event_type: req.body.event_type
-            })
-            await newEntrance.save()
-            res.json(newEntrance)
         })
     } catch (error) {
         res.json(error)
@@ -308,8 +399,12 @@ app.post("/new-entrance", (req, res) => {
 // Sixth sprint: get array of questionnaries
 app.get("/questionnaries", async (req, res) => {
     try {        
-        if (req.query) {        
+        if (Object.keys(req.query).length >= 1) {
             const questionnaires = await Questionnaire.find(req.query);
+            if(questionnaires.length === 0){
+                res.json({mensaje: "No se encontraron cuestionarios, verifica tus datos."})
+                return;
+            }
             res.json(questionnaires)
             return;
         } const questionnaires = await Questionnaire.find();
@@ -329,28 +424,64 @@ app.post("/questionnarie",async (req, res) => {
         res.json(newQuestionnarie)
         return;
     } catch (error) {
-        res.json(error)
+        res.status(500).json(error)
         return
     }
 })
 
 // Seventh sprint: post many admonitions
 app.post("/admonitions", async (req, res) => {
-    try {        
+    try {
         const funcion = req.body.map(async e => {
             const user = await UserTagId.findOne({tag_id: e.tag_id})
-            var target = {};
-            //TODO: not tag id found
             if(user){
-                for (var i in user._doc) {
-                  if (["_id"].indexOf(i) >= 0) continue;
-                  if (!Object.prototype.hasOwnProperty.call(user._doc, i)) continue;
-                  target[i] = user._doc[i];
+                delete user._id
+                console.log(user._id)                    
+                let target = {}
+                for (var i in user) {
+                    if (["_id"].indexOf(i) >= 0) continue;
+                    if (!Object.prototype.hasOwnProperty.call(user._doc, i)) continue;
+                    target[i] = user[i];
                 }
-            }  
-            target.points = e.points
-            target.id_lectora = e.id_lectora
-            return target;
+                target.points = e.points
+                target.id_lectora = e.id_lectora
+                console.log(target)
+                return target
+            } else {
+                const target = new Admonition({
+                    tag_id: "_descono",
+                    registered_by_user_id: 0,
+                    user_id: "_desconocido",
+                    first_name: "_desconocido",
+                    last_name: "_desconocido",
+                    email: "",
+                    identification_img_url: "",
+                    identification_img_file_name: "",
+                    mobile_number: "",
+                    badge: "",
+                    adminuser: "",
+                    adminpassword: "",
+                    adminsub: "",
+                    arrivaldate: "",
+                    accessdate: "",
+                    limitdate: "",
+                    user_role: {
+                        role: "_desconocido"
+                    },
+                    organization_role: {
+                        region: "_desconocido",
+                        zona: "_desconocido",
+                        distrito: "_desconocido",
+                        area: "_desconocido",
+
+                    },
+                    id_lectora: e.id_lectora,
+                    points: e.points
+                })
+                return target
+            }
+            // * SOLVED
+            //TODO: not tag id found
         })
         Promise.all(funcion).then(results => {
             Admonition.insertMany(results)
@@ -370,28 +501,76 @@ app.post("/answers", (req, res) => {
             UserTagId.findOne({
                 tag_id: req.body[index].tag_id
             }).then(async respuesta => {
-                //TODO: not tag id found
-                const user = respuesta._doc
-                delete user._id
-                const newAnswer = new Answers({
-                    track: req.body[index].track,
-                    ...user,
-                    preguntas: req.body[index].preguntas
-                });
-                newAnswer.correctas = 0;
-                newAnswer.incorrectas = 0;
-                const { preguntas } = req.body[index];
-                preguntas.forEach(e => {
-                    if(e.respuesta_usuario === e.respuesta_correcta) {
-                        newAnswer.correctas += 1
-                    } else {
-                        newAnswer.incorrectas += 1
-                    }
-                })
-                const calificacion = newAnswer.correctas / preguntas.length 
-                newAnswer.calificacion = (calificacion * 100)
-                await newAnswer.save();
-                return newAnswer
+                if(respuesta){
+                    // * SOLVED
+                    //TODO: not tag id found
+                    const user = respuesta._doc
+                    delete user._id
+                    const newAnswer = new Answers({
+                        track: req.body[index].track,
+                        ...user,
+                        preguntas: req.body[index].preguntas
+                    });
+                    newAnswer.correctas = 0;
+                    newAnswer.incorrectas = 0;
+                    const { preguntas } = req.body[index];
+                    preguntas.forEach(e => {
+                        if(e.respuesta_usuario === e.respuesta_correcta) {
+                            newAnswer.correctas += 1
+                        } else {
+                            newAnswer.incorrectas += 1
+                        }
+                    })
+                    const calificacion = newAnswer.correctas / preguntas.length 
+                    newAnswer.calificacion = (calificacion * 100)
+                    await newAnswer.save();
+                    return newAnswer
+                } else {
+                    const target = new Answers({
+                        track: req.body[index].track,
+                        preguntas: req.body[index].preguntas,
+                        tag_id: "_descono",
+                        registered_by_user_id: 0,
+                        user_id: "_desconocido",
+                        first_name: "_desconocido",
+                        last_name: "_desconocido",
+                        email: "",
+                        identification_img_url: "",
+                        identification_img_file_name: "",
+                        mobile_number: "",
+                        badge: "",
+                        adminuser: "",
+                        adminpassword: "",
+                        adminsub: "",
+                        arrivaldate: "",
+                        accessdate: "",
+                        limitdate: "",
+                        user_role: {
+                            role: "_desconocido"
+                        },
+                        organization_role: {
+                            region: "_desconocido",
+                            zona: "_desconocido",
+                            distrito: "_desconocido",
+                            area: "_desconocido",
+    
+                        }
+                    })
+                    const { preguntas } = req.body[index];
+                    target.correctas = 0;
+                    target.incorrectas = 0;
+                    preguntas.forEach(e => {
+                        if(e.respuesta_usuario === e.respuesta_correcta) {
+                            target.correctas += 1
+                        } else {
+                            target.incorrectas += 1
+                        }
+                    })
+                    const calificacion = target.correctas / preguntas.length 
+                    target.calificacion = (calificacion * 100)
+                    await target.save();
+                    return target
+                }
             })
             return object
         })
