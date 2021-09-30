@@ -60,12 +60,58 @@ app.get("/tienda", async (req, res) => {
                     }
                 })
                 res.json(response)
-            } {
+                return
+            } else {
                 res.json(users)
+                return
             }
         } catch (error) {
             res.json(error)
+            return
         }
+    } catch (error) {
+        console.log(error);
+        res.json({mensaje: "Ocurrió un error. Vuelve a intentarlo"})
+    }
+})
+
+
+app.get("/users", async (req, res) => {
+    try {
+        let query = {}
+        if(req.query.region && req.query.region.length>0){
+            query["organization_role.region"] = req.query.region
+            console.log('query',query)
+        }
+        if(req.query.zona && req.query.zona.length>0){
+            query["organization_role.zona"] = req.query.zona
+            console.log('query',query)
+        }
+        if(req.query.distrito && req.query.distrito.length>0){
+            query["organization_role.distrito"] = req.query.distrito
+            console.log('query',query)
+        }
+        if(req.query.tienda && req.query.tienda.length>0){
+            var regexp = new RegExp( req.query.tienda,'i');
+            query["organization_role.tienda"] = regexp
+            console.log('query at tienda',query)
+        }
+        if(req.query.first_name && req.query.first_name.length>0){
+            var regexp = new RegExp(req.query.first_name,'i');
+            query["first_name"] = regexp
+            console.log('query',query)
+        }
+        if(req.query.last_name && req.query.last_name.length>0){
+            var regexp = new RegExp( req.query.last_name,'i');
+            query["last_name"] = regexp
+            console.log('query',query)
+        }
+        const users = await User.find(query)
+        console.log('req.query',req.query)
+        console.log('users',users)
+
+        res.json(users)
+        return
     } catch (error) {
         console.log(error);
         res.json({mensaje: "Ocurrió un error. Vuelve a intentarlo"})
