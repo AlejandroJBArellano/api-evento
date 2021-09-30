@@ -280,79 +280,68 @@ app.get("/tag_id-users/all", async (req, res) => {
 
 // Fourth sprint: embed user and tag-id
 app.post("/tag_id-user", async (req, res) => {
-    const usuarioTagId = await UserTagId.findOne({
-        tag_id: req.body.tag_id
-    })
-    if(usuarioTagId){
-        res.json({
-            mensaje: "Este usuario ya tiene vinculado un tag", 
-            ...usuarioTagId._doc
-        })
-        return;
-    } else {
-        const theUser = User.findById(req.body.id)
-            .then(async (respuesta) => {
-                if(respuesta){
-                    var target = {};
-                    //TODO: not user found
-                    for (var i in respuesta._doc) {
-                      if (["_id"].indexOf(i) >= 0) continue;
-                      if (!Object.prototype.hasOwnProperty.call(respuesta._doc, i)) continue;
-                      target[i] = respuesta._doc[i];
-                    }
-                    const newUserTagId = new UserTagId({
-                        tag_id: req.body.tag_id,
-                        user_id:respuesta._id,
-                        ...target
-                    })
-                    try{
-                        await newUserTagId.save()
-                        res.json(newUserTagId)
-                    }catch(err){
-                        res.status(500).json({error:err});
-                    }
-                } else {
-                    const respuesta = {
-                        tag_id: req.body.tag_id,
-                        registered_by_user_id: 0,
-                        user_id: "_desconocido",
-                        first_name: "_desconocido",
-                        last_name: "_desconocido",
-                        email: "",
-                        identification_img_url: "",
-                        identification_img_file_name: "",
-                        mobile_number: "",
-                        badge: "",
-                        adminuser: "",
-                        adminpassword: "",
-                        adminsub: "",
-                        arrivaldate: "",
-                        accessdate: "",
-                        limitdate: "",
-                        user_role: {
-                            role: "_desconocido"
-                        },
-                        organization_role: {
-                            region: "_desconocido",
-                            zona: "_desconocido",
-                            distrito: "_desconocido",
-                            area: "_desconocido",
-    
-                        }
-                    }
-                    try {
-                        const newUserTagId = new UserTagId(respuesta);
-                        await newUserTagId.save()
-                        res.json(newUserTagId)
-                        return;
-                    } catch (error) {
-                        res.status(500).json(error)
-                        return;
+    const theUser = User.findById(req.body.id)
+        .then(async (respuesta) => {
+            if(respuesta){
+                var target = {};
+                //TODO: not user found
+                for (var i in respuesta._doc) {
+                    if (["_id"].indexOf(i) >= 0) continue;
+                    if (!Object.prototype.hasOwnProperty.call(respuesta._doc, i)) continue;
+                    target[i] = respuesta._doc[i];
+                }
+                const newUserTagId = new UserTagId({
+                    tag_id: req.body.tag_id,
+                    user_id:respuesta._id,
+                    ...target
+                })
+                try{
+                    await newUserTagId.save()
+                    res.json(newUserTagId)
+                }catch(err){
+                    res.status(500).json({error:err});
+                }
+            } else {
+                const respuesta = {
+                    tag_id: req.body.tag_id,
+                    registered_by_user_id: 0,
+                    user_id: "_desconocido",
+                    first_name: "_desconocido",
+                    last_name: "_desconocido",
+                    email: "",
+                    identification_img_url: "",
+                    identification_img_file_name: "",
+                    mobile_number: "",
+                    badge: "",
+                    adminuser: "",
+                    adminpassword: "",
+                    adminsub: "",
+                    arrivaldate: "",
+                    accessdate: "",
+                    limitdate: "",
+                    user_role: {
+                        role: "_desconocido"
+                    },
+                    organization_role: {
+                        region: "_desconocido",
+                        zona: "_desconocido",
+                        distrito: "_desconocido",
+                        area: "_desconocido",
+
                     }
                 }
-                
-            })
-    }
+                try {
+                    const newUserTagId = new UserTagId(respuesta);
+                    await newUserTagId.save()
+                    res.json(newUserTagId)
+                    return;
+                } catch (error) {
+                    res.status(500).json(error)
+                    return;
+                }
+            }
+            
+        })
 })
 
 
@@ -402,7 +391,7 @@ app.post("/new-entrance", (req, res) => {
                 res.json(newEntrance)
             } else {
                 const target = {
-                    tag_id: "_descono",
+                    tag_id: req.body.tag_id,
                     registered_by_user_id: 0,
                     user_id: "_desconocido",
                     first_name: "_desconocido",
@@ -482,7 +471,6 @@ app.post("/admonitions", async (req, res) => {
             const user = await UserTagId.findOne({tag_id: e.tag_id})
             if(user){
                 delete user._id
-                console.log(user._id)                    
                 let target = {}
                 for (var i in user) {
                     if (["_id"].indexOf(i) >= 0) continue;
@@ -491,11 +479,10 @@ app.post("/admonitions", async (req, res) => {
                 }
                 target.points = e.points
                 target.id_lectora = e.id_lectora
-                console.log(target)
                 return target
             } else {
                 const target = new Admonition({
-                    tag_id: "_descono",
+                    tag_id: e.tag_id,
                     registered_by_user_id: 0,
                     user_id: "_desconocido",
                     first_name: "_desconocido",
@@ -575,7 +562,7 @@ app.post("/answers", (req, res) => {
                     const target = new Answers({
                         track: req.body[index].track,
                         preguntas: req.body[index].preguntas,
-                        tag_id: "_descono",
+                        tag_id: req.body[index].tag_id,
                         registered_by_user_id: 0,
                         user_id: "_desconocido",
                         first_name: "_desconocido",
