@@ -9,10 +9,7 @@ const QuestionSchema = new Schema({
 })
 
 const AnswersSchema = new Schema({
-    tag_id: {
-        type: String,
-        required: true
-    },
+    tag_id: String,
     track: Number,
     registered_by_user_id: Number,
     email: String,

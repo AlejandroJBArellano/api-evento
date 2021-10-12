@@ -78,9 +78,9 @@ POST http://localhost:3000/new-entrance HTTP/1.1
 Content-Type: application/json
 
 {
-    "tag_id": "3946b549",
-    "id_lectora": "1",
-    "event_type": "salida"
+    "tag_id": "39eba149",
+    "id_lectora": "inpulse/dt/pulses/Pulso404/tag-id",
+    "event_type": "entrada"
 }
 
 ###
