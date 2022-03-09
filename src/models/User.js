@@ -1,6 +1,12 @@
 const { Schema, model } = require("mongoose");
 
+const CumtomPropertieSchema = new Schema({
+    name: String,
+    value: Schema.Types.Mixed
+}, {_id: false, versionKey: false})
+
 const UserSchema = new Schema({
+    event_code: String,
     registered_by_user_id: Number,
     email: String,
     first_name: String,
@@ -22,13 +28,14 @@ const UserSchema = new Schema({
         }
     },
     organization_role: {  
-        region: String,
-        zona: String,
-        distrito: String,
-        tienda: String,
-        area: String,
-        role: String
-    }
+        empresa: String,
+        titulo: String,
+        pais: String,
+        estado: String,
+        localidad: String,
+        attendance_type: String
+    },
+    custom_properties: [CumtomPropertieSchema]
 }, {
     versionKey: false
 });

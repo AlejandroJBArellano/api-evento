@@ -1,6 +1,12 @@
 const { Schema, model } = require("mongoose");
 
+const CumtomPropertieSchema = new Schema({
+    name: String,
+    value: Schema.Types.Mixed
+}, {_id: false, versionKey: false})
+
 const UserTagIdSchema = new Schema({
+    event_code: String,
     user_id:String,
     tag_id: {
         type: String,
@@ -27,13 +33,14 @@ const UserTagIdSchema = new Schema({
         }
     },
     organization_role: {  
-        region: String,
-        zona: String,
-        distrito: String,
-        tienda: String,
-        area: String,
-        role: String
-    }
+        empresa: String,
+        titulo: String,
+        pais: String,
+        estado: String,
+        localidad: String,
+        attendance_type: String
+    },
+    custom_properties: [CumtomPropertieSchema]
 }, {
     versionKey: false
 })
