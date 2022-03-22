@@ -41,7 +41,7 @@ app.post("/new-user", async (req, res) => {
         res.json({message: "success", ...newUser._doc})
     } catch (error) {
         console.log(error);
-        res.json({mensaje: "Ocurrió un error. Vuelve a intentarlo"})
+        res.status(500).json({mensaje: "Ocurrió un error. Vuelve a intentarlo"})
     }
 })
 
@@ -50,7 +50,7 @@ app.post("/new-user", async (req, res) => {
 app.get("/estado", async (req, res) => {
     try {
         const users = await User.find({
-            "organization_role.estado": req.query.tienda
+            "organization_role.estado": req.query.estado
         })
         console.log(req.query)
         const response = []
@@ -74,7 +74,7 @@ app.get("/estado", async (req, res) => {
         }
     } catch (error) {
         console.log(error);
-        res.json({mensaje: "Ocurrió un error. Vuelve a intentarlo"})
+        res.json.status(500)({mensaje: "Ocurrió un error. Vuelve a intentarlo"})
     }
 })
 
@@ -117,7 +117,7 @@ app.get("/users", async (req, res) => {
         return
     } catch (error) {
         console.log(error);
-        res.json({mensaje: "Ocurrió un error. Vuelve a intentarlo"})
+        res.json.status(500)({mensaje: "Ocurrió un error. Vuelve a intentarlo"})
     }
 })
 
@@ -139,11 +139,6 @@ app.get("/empresa", async (req, res) => {
                     ['organization_role.localidad',1]
                 ]
             )
-
-            if(users.length === 0){
-                res.json({mensaje: "No se encontró a nadie en la búsqueda."})
-                return;
-            }
 
             const response = []
             
@@ -167,7 +162,7 @@ app.get("/empresa", async (req, res) => {
 
     } catch (error) {
         console.log(error);
-        res.json({mensaje: "Ocurrió un error. Vuelve a intentarlo"})
+        res.status(500).json({mensaje: "Ocurrió un error. Vuelve a intentarlo"})
     }
 })
 
@@ -179,7 +174,7 @@ app.get("/user/:id", async (req, res) => {
         const user = await User.findById(id)
 
         if(!user) {
-            res.json({mensaje: "No se pudo encontrar al usuario. Verifica que el identificar único sea el correcto y vuelve a intentarlo."})
+            res.json({})
             return;
         }
 
@@ -187,7 +182,8 @@ app.get("/user/:id", async (req, res) => {
         return;
 
     } catch (error) {
-        
+        console.log(error);
+        res.status(500).json({mensaje: "Ocurrió un error. Vuelve a intentarlo"})
     }
 })
 
@@ -227,11 +223,6 @@ app.get("/stores", async (req, res) => {
 
             const stores = await Store.find(query)
             
-            if(stores.length === 0) {
-                res.json({mensaje: "No se encontró ninguna tienda. Verifica tus datos y vuelve a intentarlo."})
-                return;
-            }
-            
             res.json(stores)
             return;
         }
@@ -251,26 +242,24 @@ app.get("/tag_id-users/all", async (req, res) => {
 
         } else {
 
-            const { empresa, titulo, pais } = req.query
+            const { empresa, titulo, pais, estado } = req.query
             let query = {}
 
             if(titulo){
-                query['organization_role.titulo']=titulo
+                query['organization_role.titulo'] = titulo
             }
             if(pais){
-                query['organization_role.pais']=pais
+                query['organization_role.pais'] = pais
             }
             if(empresa){
-                query['organization_role.empresa']=empresa
+                query['organization_role.empresa'] = empresa
+            }
+            if(estado){
+                query['organization_role.estado'] = estado
             }
 
             const users = await UserTagId.find(query)
-
-            if(users.length === 0) {
-                res.json({mensaje: "No se encontró a ningún usuario. Verifica tus datos e inténtalo de nuevo"})
-                return;
-            }
-
+            console.log(users)
             res.json(users)
             return;
 
@@ -354,7 +343,7 @@ app.get("/tag_id-user", async (req, res) => {
             tag_id: req.query.tag_id
         })
         if(!user){
-            res.json({mensaje: "No se encontró al usuario, vuelve a intentarlo."})
+            res.json({})
             return;
         }
         res.json(user)
@@ -433,10 +422,6 @@ app.get("/questionnaries", async (req, res) => {
     try {        
         if (Object.keys(req.query).length >= 1) {
             const questionnaires = await Questionnaire.find(req.query);
-            if(questionnaires.length === 0){
-                res.json({mensaje: "No se encontraron cuestionarios, verifica tus datos."})
-                return;
-            }
             res.json(questionnaires)
             return;
         } const questionnaires = await Questionnaire.find();
@@ -610,6 +595,11 @@ app.post("/answers", (req, res) => {
         res.json(error)
         return;
     }
+})
+
+app.get("/estados", async(req, res) => {
+    const estados = await User.distinct('organization_role.estado');
+    res.json(estados);
 })
 
 module.exports = app;
