@@ -1,6 +1,10 @@
 const { Router } = require("express"),
 app = Router();
 
+const ConfigEntrance = require("./models/ConfigEntrance");
+const ConfigTags = require("./models/ConfigTags");
+const Impresora = require("./models/Impresora");
+const Lectora = require("./models/Lectora");
 // Models
 const User = require("./models/User"),
 Store = require("./models/Store"),
@@ -13,16 +17,8 @@ Answers = require("./models/Answers");
 // Messages
 const message = "Success";
 
-app.get("/config-tags", (req, res) => {
-    const config = [
-        {tag_id:'661c67af',cmd:'CMD_READY'},
-        {tag_id:'5cb7cc6d',cmd:'CMD_ADD_POINTS'},
-        {tag_id:'842ad83f',cmd:'CMD_SUBSTRACT_POINTS'},
-        {tag_id:'800ed83f',cmd:'CMD_SYNC'},
-        {tag_id:'2960d83f',cmd:'CMD_SYNC'},
-        {tag_id:'eceed73f',cmd:'CMD_SHOW_CONFIG'},
-        {tag_id:'2671922f',cmd:'CMD_ADD_POINTS'}
-    ]
+app.get("/config-tags", async (req, res) => {
+    const config = await ConfigTags.find();
     res.json(config)
 })
 
@@ -121,7 +117,6 @@ app.get("/users", async (req, res) => {
     }
 })
 
-
 // Second sprint: find users by store and first letters of the last name
 
 app.get("/empresa", async (req, res) => {
@@ -187,6 +182,15 @@ app.get("/user/:id", async (req, res) => {
     }
 })
 
+app.put('/user/:id', async (req, res) => {
+    try {        
+        User.findByIdAndUpdate(req.params.id, req.body, {returnDocument: 'after'})
+            .then(e => res.json(e).status(200))
+            .catch(err => res.json(err).status(500))
+    } catch (error) {
+        res.json(error).status(500)
+    }
+})
 
 // Third sprint: store registration
 app.post("/new-store", async (req, res) => {
@@ -335,6 +339,15 @@ app.post("/tag_id-user", async (req, res) => {
         })
 })
 
+app.put('/tag_id-user/:id', async (req, res) => {
+    try {        
+        UserTagId.findByIdAndUpdate(req.params.id, req.body, {returnDocument: 'after'})
+            .then(e => res.json(e).status(200))
+            .catch(err => res.json(err).status(500));
+    } catch (error) {
+        res.json(error).status(500)
+    }
+})
 
 // Fourth sprint: get a user by giving it a tag_id
 app.get("/tag_id-user", async (req, res) => {
@@ -600,6 +613,20 @@ app.post("/answers", (req, res) => {
 app.get("/estados", async(req, res) => {
     const estados = await User.distinct('organization_role.estado');
     res.json(estados);
+})
+
+app.get('/config-entrance', async (req, res) => {
+    const entrances = await ConfigEntrance.find();
+    res.json(entrances)
+});
+
+app.get('/config-registro-en-sitio', async (req, res) => {
+    const lectoras = await Lectora.find();
+    const impresoras = await Impresora.find();
+    res.json({
+        lectoras,
+        impresoras
+    })
 })
 
 module.exports = app;
