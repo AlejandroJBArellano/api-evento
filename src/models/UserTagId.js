@@ -10,7 +10,8 @@ const UserTagIdSchema = new Schema({
     user_id:String,
     tag_id: {
         type: String,
-        required: true
+        required: true,
+        unique: true
     },
     registered_by_user_id: Number,
     email: String,
@@ -42,7 +43,8 @@ const UserTagIdSchema = new Schema({
     },
     custom_properties: [CumtomPropertieSchema]
 }, {
-    versionKey: false
+    versionKey: false,
+    timestamps: true
 })
 
 module.exports = model("UserTagId", UserTagIdSchema)

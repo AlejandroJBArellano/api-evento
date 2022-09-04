@@ -1,6 +1,9 @@
 const { Router } = require("express"),
 app = Router();
 
+const getExhibitors = require("./exportingDatabase/getExhibitors");
+const getStores = require("./exportingDatabase/getStores");
+const getUsers = require("./exportingDatabase/getUsers");
 const ConfigEntrance = require("./models/ConfigEntrance");
 const ConfigTags = require("./models/ConfigTags");
 const Impresora = require("./models/Impresora");
@@ -43,10 +46,10 @@ app.post("/new-user", async (req, res) => {
 
 // Second sprint: find users by store and first letters of the last name
 
-app.get("/estado", async (req, res) => {
+app.get("/region", async (req, res) => {
     try {
         const users = await User.find({
-            "organization_role.estado": req.query.estado
+            "organization_role.region": req.query.region
         })
         console.log(req.query)
         const response = []
@@ -367,6 +370,22 @@ app.get("/tag_id-user", async (req, res) => {
     }
 })
 
+app.get("/tag-ids-by-user-id", async (req, res) => {
+    try {
+        const users = await UserTagId.find({
+            user_id: req.query.user_id
+        })
+
+        res.json(users)
+        console.log(users)
+        return;
+
+    } catch (error) {
+        res.json(error)
+        return;
+    }
+})
+
 
 // Fifth sprint: create the entrance and get out
 app.post("/new-entrance", (req, res) => {
@@ -608,11 +627,20 @@ app.post("/answers", (req, res) => {
         res.json(error)
         return;
     }
+});
+
+app.delete("/user_tag-id", async (req, res) => {
+    await UserTagId.findOneAndDelete({
+        tag_id: req.query.tag_id
+    })
+    res.json({
+        success: true
+    }).status(200)
 })
 
-app.get("/estados", async(req, res) => {
-    const estados = await User.distinct('organization_role.estado');
-    res.json(estados);
+app.get("/regiones", async(req, res) => {
+    const regiones = await User.distinct('organization_role.region');
+    res.json(regiones);
 })
 
 app.get('/config-entrance', async (req, res) => {
@@ -627,6 +655,27 @@ app.get('/config-registro-en-sitio', async (req, res) => {
         lectoras,
         impresoras
     })
+})
+
+app.get('/insert-exhibitors', async (req, res) => {
+    getExhibitors()
+    res.json({
+        message: "Exhibitors inserted"
+    }).status(200)
+})
+
+app.get('/insert-stores', async (req, res) => {
+    getStores()
+    res.json({
+        message: "Stores inserted"
+    }).status(200)
+})
+
+app.get('/insert-users', async (req, res) => {
+    getUsers()
+    res.json({
+        message: "Users inserted"
+    }).status(200)
 })
 
 module.exports = app;

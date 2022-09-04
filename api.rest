@@ -217,9 +217,16 @@ Content-Type: application/json
 }
 
 ###
-PUT http://localhost:3000/tag_id-user/3946b549 HTTP/1.1
+PUT http://localhost:3000/tag_id-user/624b29fbf6af77f1c08b0d74 HTTP/1.1
 Content-Type: application/json
 
 {
     "tag_id": "12345678"
 }
+
+###
+GET http://localhost:3000/insert-exhibitors HTTP/1.1
+###
+GET http://localhost:3000/insert-stores HTTP/1.1
+###
+GET http://localhost:3000/insert-users HTTP/1.1

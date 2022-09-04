@@ -27,13 +27,13 @@ const UserSchema = new Schema({
             required: true
         }
     },
-    organization_role: {  
-        empresa: String,
-        titulo: String,
-        pais: String,
-        estado: String,
-        localidad: String,
-        attendance_type: String
+    organization_role: {
+        region: String,
+        zona: String,
+        distrito: String,
+        tienda: String,
+        area: String,
+        role: String,
     },
     custom_properties: [CumtomPropertieSchema]
 }, {
