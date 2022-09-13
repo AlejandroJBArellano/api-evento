@@ -88,9 +88,9 @@ POST http://localhost:3000/new-entrance HTTP/1.1
 Content-Type: application/json
 
 {
-    "tag_id": "3dgfdhsf",
+    "tag_id": "gafete15",
     "id_lectora": "1",
-    "event_type": "salida"
+    "event_type": "entrada"
 }
 
 ###
@@ -230,3 +230,6 @@ GET http://localhost:3000/insert-exhibitors HTTP/1.1
 GET http://localhost:3000/insert-stores HTTP/1.1
 ###
 GET http://localhost:3000/insert-users HTTP/1.1
+
+###
+GET http://localhost:3000/how-many-got-in HTTP/1.1

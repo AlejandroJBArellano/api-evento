@@ -81,22 +81,26 @@ app.get("/region", async (req, res) => {
 app.get("/users", async (req, res) => {
     try {
         let query = {}
-        if(req.query.empresa && req.query.empresa.length>0){
-            query["organization_role.empresa"] = req.query.empresa
-            console.log('query',query)
+        if(req.query.user_id && req.query.user_id.length>0){
+            query["_id"] = req.query.user_id
+            console.log(query, query)
         }
-        if(req.query.titulo && req.query.titulo.length>0){
-            query["organization_role.titulo"] = req.query.titulo
+        if(req.query.zona && req.query.zona.length>0){
+            query["organization_role.zona"] = req.query.zona
             console.log('query',query)
         }
         if(req.query.distrito && req.query.distrito.length>0){
-            query["organization_role.pais"] = req.query.distrito
+            query["organization_role.distrito"] = req.query.distrito
             console.log('query',query)
         }
-        if(req.query.estado && req.query.estado.length>0){
-            var regexp = new RegExp( req.query.estado,'i');
-            query["organization_role.estado"] = regexp
-            console.log('query at estado',query)
+        if(req.query.tienda && req.query.tienda.length>0){
+            query["organization_role.pais"] = req.query.tienda
+            console.log('query',query)
+        }
+        if(req.query.region && req.query.region.length>0){
+            var regexp = new RegExp( req.query.region,'i');
+            query["organization_role.region"] = regexp
+            console.log('query at region',query)
         }
         if(req.query.first_name && req.query.first_name.length>0){
             var regexp = new RegExp(req.query.first_name,'i');
@@ -109,14 +113,25 @@ app.get("/users", async (req, res) => {
             console.log('query',query)
         }
         const users = await User.find(query)
+        const tag_ids = await UserTagId.find({}, "tag_id user_id")
+        // console.log(tag_ids)
+        const usersWithTagId = users.map(user => {
+            return {
+                ...user._doc,
+                countTagId: tag_ids.filter(userTagId => {
+                    return userTagId.user_id == user._id
+                }).length
+            }
+        })
+        console.log("users With Tag ID",usersWithTagId)
         console.log('req.query',req.query)
-        console.log('users',users)
+        // console.log('users',users)
 
-        res.json(users)
+        res.json(usersWithTagId)
         return
     } catch (error) {
         console.log(error);
-        res.json.status(500)({mensaje: "Ocurrió un error. Vuelve a intentarlo"})
+        res.status(500).json({mensaje: "Ocurrió un error. Vuelve a intentarlo", error})
     }
 })
 
@@ -130,11 +145,11 @@ app.get("/empresa", async (req, res) => {
                 "organization_role.empresa": req.query.empresa
             }).sort(
                 [
-                    ['organization_role.titulo',1],
-                    ['organization_role.pais',1],
-                    ['user_role.attendance_type',-1],
-                    ['organization_role.estado',1],
-                    ['organization_role.localidad',1]
+                    ['organization_role.zona',1],
+                    ['organization_role.distrito',1],
+                    ['user_role.role',-1],
+                    ['organization_role.region',1],
+                    ['organization_role.teinda',1]
                 ]
             )
 
@@ -215,17 +230,17 @@ app.get("/stores", async (req, res) => {
             res.json(stores)
             return;
         } else {
-            const { empresa, titulo, pais } = req.query
+            const { region, zona, distrito } = req.query
             const query = {}
 
-            if(titulo){
-                query.titulo = titulo
+            if(zona){
+                query.zona = zona
             }
-            if(pais){
-                query.pais = pais
+            if(distrito){
+                query.distrito = distrito
             }
-            if(empresa){
-                query.empresa = empresa
+            if(region){
+                query.region = region
             }
 
             const stores = await Store.find(query)
@@ -249,20 +264,20 @@ app.get("/tag_id-users/all", async (req, res) => {
 
         } else {
 
-            const { empresa, titulo, pais, estado } = req.query
+            const { region, zona, distrito, tienda } = req.query
             let query = {}
 
-            if(titulo){
-                query['organization_role.titulo'] = titulo
+            if(zona){
+                query['organization_role.zona'] = zona
             }
-            if(pais){
-                query['organization_role.pais'] = pais
+            if(distrito){
+                query['organization_role.distrito'] = distrito
             }
-            if(empresa){
-                query['organization_role.empresa'] = empresa
+            if(region){
+                query['organization_role.region'] = region
             }
-            if(estado){
-                query['organization_role.estado'] = estado
+            if(tienda){
+                query['organization_role.tienda'] = tienda
             }
 
             const users = await UserTagId.find(query)
@@ -322,10 +337,10 @@ app.post("/tag_id-user", async (req, res) => {
                         role: "_desconocido"
                     },
                     organization_role: {
-                        empresa: "_desconocido",
-                        titulo: "_desconocido",
-                        pais: "_desconocido",
-                        localidad: "_desconocido"
+                        region: "_desconocido",
+                        zona: "_desconocido",
+                        distrito: "_desconocido",
+                        tienda: "_desconocido"
                     }
                 }
                 try {
@@ -429,10 +444,10 @@ app.post("/new-entrance", (req, res) => {
                         role: "_desconocido"
                     },
                     organization_role: {
-                        empresa: "_desconocido",
-                        titulo: "_desconocido",
-                        pais: "_desconocido",
-                        localidad: "_desconocido",
+                        region: "_desconocido",
+                        zona: "_desconocido",
+                        distrito: "_desconocido",
+                        tienda: "_desconocido",
 
                     },
                     id_lectora: req.body.id_lectora,
@@ -516,10 +531,10 @@ app.post("/admonitions", async (req, res) => {
                         role: "_desconocido"
                     },
                     organization_role: {
-                        empresa: "_desconocido",
-                        titulo: "_desconocido",
-                        pais: "_desconocido",
-                        localidad: "_desconocido"
+                        region: "_desconocido",
+                        zona: "_desconocido",
+                        distrito: "_desconocido",
+                        tienda: "_desconocido",
 
                     },
                     id_lectora: e.id_lectora,
@@ -596,12 +611,12 @@ app.post("/answers", (req, res) => {
                             role: "_desconocido"
                         },
                         organization_role: {
-                            empresa: "_desconocido",
-                            titulo: "_desconocido",
-                            pais: "_desconocido",
-                            localidad: "_desconocido",
+                            region: "_desconocido",
+                            zona: "_desconocido",
+                            distrito: "_desconocido",
+                            tienda: "_desconocido",
     
-                        }
+                        },
                     })
                     const { preguntas } = req.body[index];
                     target.correctas = 0;
@@ -628,6 +643,14 @@ app.post("/answers", (req, res) => {
         return;
     }
 });
+
+app.get('/how-many-got-in', async (req, res) => {
+    const user_ids = await EntranceControl.find().distinct("user_id")
+    const users = await User.find({
+        _id: {$in: user_ids}
+    })
+    res.json(users).status(200)
+})
 
 app.delete("/user_tag-id", async (req, res) => {
     await UserTagId.findOneAndDelete({

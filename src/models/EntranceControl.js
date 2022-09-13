@@ -8,6 +8,7 @@ const CumtomPropertieSchema = new Schema({
 const EntranceControl = new Schema({
     tag_id: String,
     registered_by_user_id: Number,
+    user_id:String,
     email: String,
     first_name: String,
     identification_img_url: String,
@@ -27,13 +28,13 @@ const EntranceControl = new Schema({
             required: true
         }
     },
-    organization_role: {  
-        empresa: String,
-        titulo: String,
-        pais: String,
-        estado: String,
-        localidad: String,
-        attendance_type: String
+    organization_role: {
+        region: String,
+        zona: String,
+        distrito: String,
+        tienda: String,
+        area: String,
+        role: String,
     },
     custom_properties: [CumtomPropertieSchema],
     id_lectora: String,
