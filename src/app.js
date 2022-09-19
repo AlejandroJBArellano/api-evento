@@ -659,6 +659,34 @@ app.delete("/user_tag-id", async (req, res) => {
     res.json({
         success: true
     }).status(200)
+});
+
+app.get("/top-admonitions", async (req, res) => {
+    const admonitions = await Admonition.aggregate([
+        {
+            $group: {
+                _id: "$tag_id",
+                totalPoints: {$sum: "$points"}
+            }
+        }
+    ]).sort("-totalPoints").limit(10)
+    res.json(admonitions).status(200)
+})
+
+// TODO: match By Tag ID and return whole points
+app.get("/admonition-by-tag", async (req, res) => {
+    const admonition = await Admonition.aggregate([
+        {
+            $group: {
+                _id: "$tag_id",
+                totalPoints: {$sum: "$points"}
+            }
+        }
+    ]).sort("-totalPoints")
+    userWithAdmonitions = admonition.find((value)=>{
+        return value._id === req.query.tag_id
+    })
+    res.json(userWithAdmonitions).status(200)
 })
 
 app.get("/regiones", async(req, res) => {
@@ -700,5 +728,6 @@ app.get('/insert-users', async (req, res) => {
         message: "Users inserted"
     }).status(200)
 })
+
 
 module.exports = app;

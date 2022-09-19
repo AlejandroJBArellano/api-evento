@@ -131,16 +131,16 @@ Content-Type: application/json
 
 [
     {
-        "tag_id": "39560c49",
-        "points": -1,
+        "tag_id": "alejandr",
+        "points": {{$randomInt 5 50}},
         "id_lectora": "31234"
     },    {
-        "tag_id": "13341624562",
-        "points": 1,
+        "tag_id": "alejandre",
+        "points": {{$randomInt 5 50}},
         "id_lectora": "1244"
     },    {
-        "tag_id": "39daea49",
-        "points": -1,
+        "tag_id": "alejandr1",
+        "points": {{$randomInt 5 50}},
         "id_lectora": "3123421"
     }
 ]
@@ -233,3 +233,8 @@ GET http://localhost:3000/insert-users HTTP/1.1
 
 ###
 GET http://localhost:3000/how-many-got-in HTTP/1.1
+
+###
+GET http://localhost:3000/top-admonitions HTTP/1.1
+###
+GET http://localhost:3000/admonition-by-tag?tag_id=alejandr HTTP/1.1
