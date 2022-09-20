@@ -645,11 +645,51 @@ app.post("/answers", (req, res) => {
 });
 
 app.get('/how-many-got-in', async (req, res) => {
-    const user_ids = await EntranceControl.find().distinct("user_id")
-    const users = await User.find({
-        _id: {$in: user_ids}
-    })
-    res.json(users).status(200)
+    try {
+        const user_ids = await EntranceControl.find().distinct("user_id").length
+        res.json(user_ids).status(200)
+    } catch (error) {
+        res.json(error).status(500)
+    }
+});
+
+app.get("/afluency", async (req, res) => {
+    try {
+        const usersEntrance = await EntranceControl.aggregate([
+            {
+                $group: {
+                    _id: "$user_id",
+                    firstEntryDate: {$min: "$created"}
+                }
+            }
+        ])
+        const buckets = []
+        for (const user of usersEntrance) {
+            let bucketForDay = buckets.find(bucket => bucket?.firstEntryDate === user.firstEntryDate.toISOString().substring(0,10))
+            if(!bucketForDay){
+                bucketForDay = {
+                    firstEntryDate: user.firstEntryDate.toISOString().substring(0,10),
+                    // attendees: [],
+                    hours: []
+                }
+                buckets.push(bucketForDay)
+            }
+            // bucketForDay.attendees.push(user)
+            let bucketForHour = bucketForDay.hours.find(bucket => bucket.entryHour === user.firstEntryDate.toISOString().substring(11, 13))
+            if(!bucketForHour){
+                bucketForHour = {
+                    entryHour: user.firstEntryDate.toISOString().substring(11, 13),
+                    attendees: 0
+                }
+                bucketForDay.hours.push(bucketForHour)
+            }
+            bucketForHour.attendees++
+        }
+        res.json(buckets).status(200)
+    } catch (error) {
+        console.log(error)
+        res.json(error).status(500)
+    }
 })
 
 app.delete("/user_tag-id", async (req, res) => {
