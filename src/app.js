@@ -653,7 +653,7 @@ app.get('/how-many-got-in', async (req, res) => {
     }
 });
 
-app.get("/afluency", async (req, res) => {
+app.get("/influx", async (req, res) => {
     try {
         const usersEntrance = await EntranceControl.aggregate([
             {
