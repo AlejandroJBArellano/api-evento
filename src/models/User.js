@@ -1,6 +1,6 @@
 const { Schema, model } = require("mongoose");
 
-const CumtomPropertieSchema = new Schema({
+const CustomPropertySchema = new Schema({
     name: String,
     value: Schema.Types.Mixed
 }, {_id: false, versionKey: false})
@@ -35,9 +35,10 @@ const UserSchema = new Schema({
         area: String,
         role: String,
     },
-    custom_properties: [CumtomPropertieSchema]
+    custom_properties: [CustomPropertySchema]
 }, {
-    versionKey: false
+    versionKey: false,
+    strict: false
 });
 
-module.exports = model("User", UserSchema)
+module.exports = {UserSchema, User: model("User", UserSchema)}

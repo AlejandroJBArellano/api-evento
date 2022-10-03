@@ -9,7 +9,7 @@ const ConfigTags = require("./models/ConfigTags");
 const Impresora = require("./models/Impresora");
 const Lectora = require("./models/Lectora");
 // Models
-const User = require("./models/User"),
+const {User} = require("./models/User"),
 Store = require("./models/Store"),
 UserTagId = require("./models/UserTagId"),
 EntranceControl = require("./models/EntranceControl"),
@@ -25,12 +25,6 @@ app.get("/config-tags", async (req, res) => {
     res.json(config)
 })
 
-app.get("/new-user", (req, res) => {
-    const hola = "Hola mundo"
-    res.json(hola)
-})
-
-// Second sprint: post new User
 app.post("/new-user", async (req, res) => {
     try {        
         console.log("New User: req.body",req.body)
@@ -43,8 +37,6 @@ app.post("/new-user", async (req, res) => {
         res.status(500).json({mensaje: "Ocurrió un error. Vuelve a intentarlo"})
     }
 })
-
-// Second sprint: find users by store and first letters of the last name
 
 app.get("/region", async (req, res) => {
     try {
@@ -294,67 +286,71 @@ app.get("/tag_id-users/all", async (req, res) => {
 
 // Fourth sprint: embed user and tag-id
 app.post("/tag_id-user", async (req, res) => {
-    const theUser = User.findById(req.body.id)
-        .then(async (respuesta) => {
-            if(respuesta){
-                var target = {};
-                //TODO: not user found
-                for (var i in respuesta._doc) {
-                    if (["_id"].indexOf(i) >= 0) continue;
-                    if (!Object.prototype.hasOwnProperty.call(respuesta._doc, i)) continue;
-                    target[i] = respuesta._doc[i];
-                }
-                const newUserTagId = new UserTagId({
-                    tag_id: req.body.tag_id,
-                    user_id:respuesta._id,
-                    ...target
-                })
-                try{
-                    await newUserTagId.save()
-                    res.json(newUserTagId)
-                }catch(err){
-                    res.status(500).json({error:err});
-                }
-            } else {
-                const respuesta = {
-                    tag_id: req.body.tag_id,
-                    registered_by_user_id: 0,
-                    user_id: "_desconocido",
-                    first_name: "_desconocido",
-                    last_name: "_desconocido",
-                    email: "",
-                    identification_img_url: "",
-                    identification_img_file_name: "",
-                    mobile_number: "",
-                    badge: "",
-                    adminuser: "",
-                    adminpassword: "",
-                    adminsub: "",
-                    arrivaldate: "",
-                    accessdate: "",
-                    limitdate: "",
-                    user_role: {
-                        role: "_desconocido"
-                    },
-                    organization_role: {
-                        region: "_desconocido",
-                        zona: "_desconocido",
-                        distrito: "_desconocido",
-                        tienda: "_desconocido"
+    try {
+        User.findById(req.body.id)
+            .then(async (respuesta) => {
+                if(respuesta){
+                    var target = {};
+                    //TODO: not user found
+                    for (var i in respuesta._doc) {
+                        if (["_id"].indexOf(i) >= 0) continue;
+                        if (!Object.prototype.hasOwnProperty.call(respuesta._doc, i)) continue;
+                        target[i] = respuesta._doc[i];
+                    }
+                    const newUserTagId = new UserTagId({
+                        tag_id: req.body.tag_id,
+                        user_id:respuesta._id,
+                        ...target
+                    })
+                    try{
+                        await newUserTagId.save()
+                        res.json(newUserTagId)
+                    }catch(err){
+                        res.status(500).json({error:err});
+                    }
+                } else {
+                    const respuesta = {
+                        tag_id: req.body.tag_id,
+                        registered_by_user_id: 0,
+                        user_id: "_desconocido",
+                        first_name: "_desconocido",
+                        last_name: "_desconocido",
+                        email: "",
+                        identification_img_url: "",
+                        identification_img_file_name: "",
+                        mobile_number: "",
+                        badge: "",
+                        adminuser: "",
+                        adminpassword: "",
+                        adminsub: "",
+                        arrivaldate: "",
+                        accessdate: "",
+                        limitdate: "",
+                        user_role: {
+                            role: "_desconocido"
+                        },
+                        organization_role: {
+                            region: "_desconocido",
+                            zona: "_desconocido",
+                            distrito: "_desconocido",
+                            tienda: "_desconocido"
+                        }
+                    }
+                    try {
+                        const newUserTagId = new UserTagId(respuesta);
+                        await newUserTagId.save()
+                        res.json(newUserTagId)
+                        return;
+                    } catch (error) {
+                        res.status(500).json(error)
+                        return;
                     }
                 }
-                try {
-                    const newUserTagId = new UserTagId(respuesta);
-                    await newUserTagId.save()
-                    res.json(newUserTagId)
-                    return;
-                } catch (error) {
-                    res.status(500).json(error)
-                    return;
-                }
-            }
-            
-        })
+            })
+    } catch (error) {
+        res.status(500).json(error)
+        return;
+    }
 })
 
 app.put('/tag_id-user/:id', async (req, res) => {
@@ -559,82 +555,80 @@ app.post("/admonitions", async (req, res) => {
 // Eighth sprint: post the answers
 app.post("/answers", (req, res) => {
     try {        
-        const arrayDe = req.body.map( (object, index) => {
-            UserTagId.findOne({
+        const arrayDe = req.body.map(async (object, index) => {
+            const userTagId = await UserTagId.findOne({
                 tag_id: req.body[index].tag_id
-            }).then(async respuesta => {
-                if(respuesta){
-                    // * SOLVED
-                    //TODO: not tag id found
-                    const user = respuesta._doc
-                    delete user._id
-                    const newAnswer = new Answers({
-                        track: req.body[index].track,
-                        ...user,
-                        preguntas: req.body[index].preguntas
-                    });
-                    newAnswer.correctas = 0;
-                    newAnswer.incorrectas = 0;
-                    const { preguntas } = req.body[index];
-                    preguntas.forEach(e => {
-                        if(e.respuesta_usuario === e.respuesta_correcta) {
-                            newAnswer.correctas += 1
-                        } else {
-                            newAnswer.incorrectas += 1
-                        }
-                    })
-                    const calificacion = newAnswer.correctas / preguntas.length 
-                    newAnswer.calificacion = (calificacion * 100)
-                    await newAnswer.save();
-                    return newAnswer
-                } else {
-                    const target = new Answers({
-                        track: req.body[index].track,
-                        preguntas: req.body[index].preguntas,
-                        tag_id: req.body[index].tag_id,
-                        registered_by_user_id: 0,
-                        user_id: "_desconocido",
-                        first_name: "_desconocido",
-                        last_name: "_desconocido",
-                        email: "",
-                        identification_img_url: "",
-                        identification_img_file_name: "",
-                        mobile_number: "",
-                        badge: "",
-                        adminuser: "",
-                        adminpassword: "",
-                        adminsub: "",
-                        arrivaldate: "",
-                        accessdate: "",
-                        limitdate: "",
-                        user_role: {
-                            role: "_desconocido"
-                        },
-                        organization_role: {
-                            region: "_desconocido",
-                            zona: "_desconocido",
-                            distrito: "_desconocido",
-                            tienda: "_desconocido",
-    
-                        },
-                    })
-                    const { preguntas } = req.body[index];
-                    target.correctas = 0;
-                    target.incorrectas = 0;
-                    preguntas.forEach(e => {
-                        if(e.respuesta_usuario === e.respuesta_correcta) {
-                            target.correctas += 1
-                        } else {
-                            target.incorrectas += 1
-                        }
-                    })
-                    const calificacion = target.correctas / preguntas.length 
-                    target.calificacion = (calificacion * 100)
-                    await target.save();
-                    return target
-                }
             })
-            return object
+            if(userTagId){
+                const user = userTagId._doc
+                delete user._id
+                const newAnswer = new Answers({
+                    track: req.body[index].track,
+                    ...user,
+                    preguntas: req.body[index].preguntas
+                });
+                newAnswer.correctas = 0;
+                newAnswer.incorrectas = 0;
+                const { preguntas } = req.body[index];
+                preguntas.forEach(e => {
+                    if(e.respuesta_usuario === e.respuesta_correcta) {
+                        newAnswer.correctas += 1
+                    } else {
+                        newAnswer.incorrectas += 1
+                    }
+                })
+                const calificacion = newAnswer.correctas / preguntas.length 
+                newAnswer.calificacion = (calificacion * 100)
+                await newAnswer.save();
+                objectMapped = newAnswer
+                return newAnswer
+            } else {
+                const target = new Answers({
+                    track: req.body[index].track,
+                    preguntas: req.body[index].preguntas,
+                    tag_id: req.body[index].tag_id,
+                    registered_by_user_id: 0,
+                    user_id: "_desconocido",
+                    first_name: "_desconocido",
+                    last_name: "_desconocido",
+                    email: "",
+                    identification_img_url: "",
+                    identification_img_file_name: "",
+                    mobile_number: "",
+                    badge: "",
+                    adminuser: "",
+                    adminpassword: "",
+                    adminsub: "",
+                    arrivaldate: "",
+                    accessdate: "",
+                    limitdate: "",
+                    user_role: {
+                        role: "_desconocido"
+                    },
+                    organization_role: {
+                        region: "_desconocido",
+                        zona: "_desconocido",
+                        distrito: "_desconocido",
+                        tienda: "_desconocido",
+
+                    },
+                })
+                const { preguntas } = req.body[index];
+                target.correctas = 0;
+                target.incorrectas = 0;
+                preguntas.forEach(e => {
+                    if(e.respuesta_usuario === e.respuesta_correcta) {
+                        target.correctas += 1
+                    } else {
+                        target.incorrectas += 1
+                    }
+                })
+                const calificacion = target.correctas / preguntas.length 
+                target.calificacion = (calificacion * 100)
+                await target.save();
+                objectMapped = target
+                return target
+            }
         })
         res.json(arrayDe)
         return;

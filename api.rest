@@ -67,7 +67,7 @@ Content-Type: application/json
 
 {
     "tag_id": "3946b549",
-    "id": "612fedeb5ddbe68fdaa59eda"
+    "id": "63090c20762e25fbb8fd7a36"
 }
 
 ###
@@ -151,7 +151,7 @@ Content-Type: application/json
 
 [{
     "track": 4,
-    "tag_id": "3967b749setyh",
+    "tag_id": "alejandr1",
     "preguntas": [
         {
             "pregunta": "La función trim() modifica el objeto sobre el cual se invoca.",
@@ -176,7 +176,7 @@ Content-Type: application/json
     ]
 }, {
     "track": 4,
-    "tag_id": "39739f49",
+    "tag_id": "alejandr3",
     "preguntas": [
         {
             "pregunta": "La función trim() modifica el objeto sobre el cual se invoca.",
@@ -239,4 +239,4 @@ GET http://localhost:3000/top-admonitions HTTP/1.1
 ###
 GET http://localhost:3000/admonition-by-tag?tag_id=alejandr HTTP/1.1
 ###
-GET http://localhost:3000/afluency HTTP/1.1
+GET http://localhost:3000/influx HTTP/1.1
