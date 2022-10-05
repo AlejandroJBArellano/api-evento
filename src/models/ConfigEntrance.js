@@ -8,6 +8,8 @@ const BadgeSchema = new Schema({
         required: false
     },
     fontColor: String,
+}, {
+    _id: false
 })
 
 const ConfigSchema = new Schema({
