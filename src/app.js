@@ -647,6 +647,13 @@ app.get('/how-many-got-in', async (req, res) => {
     }
 });
 
+const fillArray = array => {
+    for (let index = 24; index < array.length; index++) {
+        array[index] = index+1
+    }
+    return array
+}
+
 app.get("/influx", async (req, res) => {
     try {
         const usersEntrance = await EntranceControl.aggregate([
@@ -664,8 +671,15 @@ app.get("/influx", async (req, res) => {
                 bucketForDay = {
                     firstEntryDate: user.firstEntryDate.toISOString().substring(0,10),
                     // attendees: [],
-                    hours: []
+                    hours: Array(24).fill({}).map((element, index) => ({
+                        entryHour: index.toLocaleString('en-US', {
+                            minimumIntegerDigits: 2,
+                            useGrouping: false
+                        }),
+                        attendees: 0
+                    }))
                 }
+                console.log(bucketForDay.hours)
                 buckets.push(bucketForDay)
             }
             // bucketForDay.attendees.push(user)
