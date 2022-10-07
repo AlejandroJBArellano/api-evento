@@ -640,12 +640,21 @@ app.post("/answers", (req, res) => {
 
 app.get('/how-many-got-in', async (req, res) => {
     try {
-        const user_ids = await EntranceControl.find().distinct("user_id").length
-        res.json(user_ids).status(200)
+        const user_ids = await EntranceControl.find().distinct("user_id")
+        res.json(user_ids.length).status(200)
     } catch (error) {
         res.json(error).status(500)
     }
 });
+
+app.get("/total-users", async (req, res) => {
+    try {
+        const users = await User.find().count()
+        res.json(users).status(200)
+    } catch (error) {
+        res.json(error).status(500)
+    }
+})
 
 const fillArray = array => {
     for (let index = 24; index < array.length; index++) {
