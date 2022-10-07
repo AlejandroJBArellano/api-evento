@@ -679,7 +679,6 @@ app.get("/influx", async (req, res) => {
                         attendees: 0
                     }))
                 }
-                console.log(bucketForDay.hours)
                 buckets.push(bucketForDay)
             }
             // bucketForDay.attendees.push(user)
