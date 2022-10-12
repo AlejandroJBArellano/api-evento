@@ -104,9 +104,21 @@ app.get("/users", async (req, res) => {
             query["last_name"] = regexp
             console.log('query',query)
         }
+        console.log('req.query', req.query)
+
         const users = await User.find(query)
-        const tag_ids = await UserTagId.find({}, "tag_id user_id")
-        // console.log(tag_ids)
+        console.log("users",users.length)
+        const users_ids = users?.map(user => user?._doc?._id.toString())
+        console.log("users_ids",users_ids.length)
+        let tag_ids = []
+        if(users?.length < 2000){            
+            tag_ids = await UserTagId.find({
+                "user_id": {
+                    $in: users_ids
+                }
+            }, "tag_id user_id")
+        }
+        console.log("tag_ids",tag_ids.lengh)
         const usersWithTagId = users.map(user => {
             return {
                 ...user._doc,
@@ -115,10 +127,6 @@ app.get("/users", async (req, res) => {
                 }).length
             }
         })
-        console.log("users With Tag ID",usersWithTagId)
-        console.log('req.query',req.query)
-        // console.log('users',users)
-
         res.json(usersWithTagId)
         return
     } catch (error) {
