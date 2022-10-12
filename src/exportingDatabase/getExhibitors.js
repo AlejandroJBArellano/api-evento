@@ -1,5 +1,5 @@
 const mysql = require("mysql2"),
-User = require("../models/User"),
+{User} = require("../models/User"),
 keys = require("./keys");
 
 const getExhibitors = () => {
