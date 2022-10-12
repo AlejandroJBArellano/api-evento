@@ -86,7 +86,7 @@ app.get("/users", async (req, res) => {
             console.log('query',query)
         }
         if(req.query.tienda && req.query.tienda.length>0){
-            query["organization_role.pais"] = req.query.tienda
+            query["organization_role.tienda"] = req.query.tienda
             console.log('query',query)
         }
         if(req.query.region && req.query.region.length>0){
