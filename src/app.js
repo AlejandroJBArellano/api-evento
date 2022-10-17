@@ -648,7 +648,7 @@ app.post("/answers", (req, res) => {
 
 app.get('/how-many-got-in', async (req, res) => {
     try {
-        const user_ids = await EntranceControl.find().distinct("user_id")
+        const user_ids = await EntranceControl.find().distinct("tag_id")
         res.json(user_ids.length).status(200)
     } catch (error) {
         res.json(error).status(500)
@@ -676,13 +676,14 @@ app.get("/influx", async (req, res) => {
         const usersEntrance = await EntranceControl.aggregate([
             {
                 $group: {
-                    _id: "$user_id",
+                    _id: "$tag_id",
                     firstEntryDate: {$min: "$created"}
                 }
             }
         ])
         const buckets = []
         for (const user of usersEntrance) {
+            user.firstEntryDate.setHours(user.firstEntryDate.getHours()-5)
             let bucketForDay = buckets.find(bucket => bucket?.firstEntryDate === user.firstEntryDate.toISOString().substring(0,10))
             if(!bucketForDay){
                 bucketForDay = {
