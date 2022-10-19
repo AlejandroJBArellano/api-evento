@@ -98,39 +98,25 @@ app.get("/users", async (req, res) => {
             query["_id"] = req.query.user_id
             console.log(query, query)
         }
-        if(req.query.zona && req.query.zona.length>0){
-            query["organization_role.zona"] = req.query.zona
-            console.log('query',query)
-        }
-        if(req.query.distrito && req.query.distrito.length>0){
-            query["organization_role.distrito"] = req.query.distrito
-            console.log('query',query)
-        }
-        if(req.query.tienda && req.query.tienda.length>0){
-            query["organization_role.tienda"] = req.query.tienda
-            console.log('query',query)
-        }
-        if(req.query.region && req.query.region.length>0){
-            var regexp = new RegExp( req.query.region,'i');
-            query["organization_role.region"] = regexp
-            console.log('query at region',query)
-        }
-        if(req.query.first_name && req.query.first_name.length>0){
-            var regexp = new RegExp(req.query.first_name,'i');
-            query["first_name"] = regexp
-            console.log('query',query)
-        }
-        if(req.query.last_name && req.query.last_name.length>0){
-            var regexp = new RegExp( req.query.last_name,'i');
-            query["last_name"] = regexp
-            console.log('query',query)
-        }
+        Object.entries(req.query).forEach((key) => {
+            const field = key[0]
+            const value = req.query[field]
+            if(value.length > 0){
+                if(field.startsWith("organization_role")){
+                    const regexp = new RegExp(value,'i');
+                    query[`organization_role.${field.replace("organization_role_", "")}`] = regexp
+                } else {
+                    const regexp = new RegExp(value, "i")
+                    query[field] = regexp
+                }
+            }
+        })
         console.log('req.query', req.query)
+        console.log("query",query)
 
         const users = await User.find(query)
         console.log("users",users.length)
         const users_ids = users?.map(user => user?._doc?._id.toString())
-        console.log("users_ids",users_ids.length)
         let tag_ids = []
         if(users?.length < 2000){            
             tag_ids = await UserTagId.find({
@@ -139,7 +125,7 @@ app.get("/users", async (req, res) => {
                 }
             }, "tag_id user_id")
         }
-        console.log("tag_ids",tag_ids.lengh)
+        console.log("tag_ids", tag_ids.length)
         const usersWithTagId = users.map(user => {
             return {
                 ...user._doc,
@@ -148,7 +134,7 @@ app.get("/users", async (req, res) => {
                 }).length
             }
         })
-        res.json(usersWithTagId)
+        res.status(200).json(usersWithTagId)
         return
     } catch (error) {
         console.log(error);
