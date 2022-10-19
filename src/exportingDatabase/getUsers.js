@@ -6,8 +6,8 @@ const getUsers = () => {
     try {
         const connection = mysql.createConnection(keys);
         
-        const getUsers = `SELECT prueba.*
-        FROM prueba WHERE id >= 2;`
+        const getUsers = `SELECT registration.*
+        FROM registration WHERE id > 28935;`
         
         connection.query(getUsers, (err, results, fields) => {
             if(err) {
