@@ -6,6 +6,11 @@ const EventSchema = new Schema({
         required: true,
 
     },
-    organization_role_for_search: [String],
-    organization_role_for_table: [String]
+    organization_role_for_search: [{
+        field: String
+    }],
+    organization_role_for_table: [{
+        field: String
+    }]
 })
+module.exports = model("Event", EventSchema)
