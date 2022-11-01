@@ -16,6 +16,7 @@
   "license": "ISC",
   "homepage": "https://bitbucket.org/humbertoinpulse/api-evento#readme",
   "dependencies": {
+    "axios": "^1.1.2",
     "cors": "^2.8.5",
     "dotenv": "^10.0.0",
     "express": "^4.17.1",

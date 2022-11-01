@@ -1,6 +1,7 @@
 const { Router } = require("express"),
 app = Router();
 
+const axios = require("axios");
 const getExhibitors = require("./exportingDatabase/getExhibitors");
 const getStores = require("./exportingDatabase/getStores");
 const getUsers = require("./exportingDatabase/getUsers");
@@ -15,10 +16,31 @@ UserTagId = require("./models/UserTagId"),
 EntranceControl = require("./models/EntranceControl"),
 Questionnaire = require("./models/Questionnaire"),
 Admonition = require("./models/Admonition"),
-Answers = require("./models/Answers");
+Answers = require("./models/Answers"),
+Event = require("./models/Event");
 
 // Messages
 const message = "Success";
+
+let membershipsTypes = []
+let ticketTypes = []
+
+const typeOfTicket = (ticket) => {
+    let badge = ""
+    switch (ticket) {
+        case "Acceso - Zona Gold A":
+            badge = "gold-a"
+            break;
+    
+        default:
+            break;
+    }
+}
+
+app.get("/", async (req,res) => {
+    const events = await Event.find()
+    res.status(200).json(events[0])
+})
 
 app.get("/config-tags", async (req, res) => {
     const config = await ConfigTags.find();
@@ -104,12 +126,25 @@ app.get("/users", async (req, res) => {
             query["last_name"] = regexp
             console.log('query',query)
         }
+        // Object.entries(req.query).forEach((key) => {
+        //     const field = key[0]
+        //     const value = req.query[field]
+        //     if(value.length > 0){
+        //         if(field.startsWith("organization_role")){
+        //             const regexp = new RegExp(value,'i');
+        //             query[`organization_role.${field.replace("organization_role_", "")}`] = regexp
+        //         } else {
+        //             const regexp = new RegExp(value, "i")
+        //             query[field] = regexp
+        //         }
+        //     }
+        // })
         console.log('req.query', req.query)
+        console.log("query",query)
 
         const users = await User.find(query)
         console.log("users",users.length)
         const users_ids = users?.map(user => user?._doc?._id.toString())
-        console.log("users_ids",users_ids.length)
         let tag_ids = []
         if(users?.length < 2000){            
             tag_ids = await UserTagId.find({
@@ -118,7 +153,7 @@ app.get("/users", async (req, res) => {
                 }
             }, "tag_id user_id")
         }
-        console.log("tag_ids",tag_ids.lengh)
+        console.log("tag_ids", tag_ids.length)
         const usersWithTagId = users.map(user => {
             return {
                 ...user._doc,
@@ -127,7 +162,7 @@ app.get("/users", async (req, res) => {
                 }).length
             }
         })
-        res.json(usersWithTagId)
+        res.status(200).json(usersWithTagId)
         return
     } catch (error) {
         console.log(error);
@@ -866,6 +901,87 @@ app.get('/insert-users', async (req, res) => {
     res.json({
         message: "Users inserted"
     }).status(200)
+})
+
+app.get("/insert-data-bubble", async (req, res) => {
+    let remaining = 0
+    let resultsTicketOrders = []
+    let dataTicketOrder = null;
+    const config = {
+        headers: {
+            "Authorization": `Bearer ${process.env.BUBBLE_API_KEY}`
+        },
+        params: {
+            limit: 100,
+            cursor: 0
+        }
+    }
+    const {data: dataTicketTypes} = await axios.get(`${process.env.BUBBLE_API}/TicketType`, config)
+    ticketTypes = dataTicketTypes.response.results
+    console.log(ticketTypes)
+    const {data: dataMembershipTypes} = await axios.get(`${process.env.BUBBLE_API}/MembershipType`, config)
+    membershipsTypes = dataMembershipTypes.response.results
+    console.log(membershipsTypes)
+    dataTicketOrder = await axios.get(`${process.env.BUBBLE_API}/TicketOrder`, config);
+    config.params.cursor = dataTicketOrder.data.response.cursor
+    remaining = dataTicketOrder.data.response.remaining
+    resultsTicketOrders.push(...dataTicketOrder.data.response.results)
+    do {
+        console.log("while", config.params.cursor, remaining)
+        dataTicketOrder = await axios.get(`${process.env.BUBBLE_API}/TicketOrder`, config);
+        remaining = dataTicketOrder.data.response.remaining
+        resultsTicketOrders.push(...dataTicketOrder.data.response.results)
+        config.params.cursor += config.params.limit
+    } while (remaining > 0);
+    config.params.cursor = 0
+    const response = []
+    console.log("Es momento de resolver las promises")
+    for (let index = 0; index < resultsTicketOrders.length; index++) {
+        const ticketOrder = resultsTicketOrders[index]
+
+        const {data} = await axios.get(`${process.env.BUBBLE_API}/Member/${resultsTicketOrders[index].ordering_Member}`, config)
+        if(data?.response == undefined) {
+            console.log("no se ha resutelto") 
+            return
+        };
+
+        const membership = membershipsTypes.find((ms) => {
+            return data?.response?.membership === ms._id
+        })
+        
+        console.log(data?.response, index)
+        response.push({
+            event_code: "Evolution2022",
+            registered_by_user_id: -1,
+            identification_img_url: "",
+            identification_img_file_name: "",
+            email: data?.response?.email,
+            first_name: ticketOrder.attendee_name,
+            last_name: "",
+            mobile_number: "",
+            // TODO: switch for ticket type to return slug
+            badge: ticketTypes.find(type => type?._id === ticketOrder?.original_TicketType).name.replaceAll(" ", "-").toLowerCase().trim(),
+            adminuser: "",
+            adminpassword: "",
+            adminsub: "",
+            arrivaldate: "",
+            accessdate: "",
+            limitdate: "",
+            user_role: {
+                role: "asistente"
+            },
+            organization_role: {
+                qr_code: ticketOrder._id,
+                buyerSmartId: data?.response?.pin,
+                buyerName: data?.response?.first_name,
+                buyerRange: membership?.name
+                
+            }
+        })
+        
+    }
+    await User.insertMany(response)
+    res.status(200).json(response)
 })
 
 

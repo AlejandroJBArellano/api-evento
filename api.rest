@@ -55,7 +55,7 @@ content-type: application/json
 GET http://localhost:3000/stores HTTP/1.1
 
 ###
-GET http://localhost:3000/stores?region=Mexico&zona=La%20Magdalena HTTP/1.1
+GET http://localhost:3000/users?region=fdshsdgfh&organization_role_zona=La%20Magdalena&hola=mundo HTTP/1.1
 
 
 ###
@@ -243,3 +243,5 @@ GET http://localhost:3000/top-admonitions HTTP/1.1
 GET http://localhost:3000/admonition-by-tag?tag_id=alejandr HTTP/1.1
 ###
 GET http://localhost:3000/influx HTTP/1.1
+###
+GET http://localhost:3000/insert-data-bubble HTTP/1.1
