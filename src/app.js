@@ -724,7 +724,8 @@ app.get("/insert-data-bubble", async (req, res) => {
         params: {
             limit: 100,
             cursor: 0 // user.cursor +1 || 0
-        }
+        },
+        timeout: 2000,
     }
     const {data: dataTicketTypes} = await axios.get(`${process.env.BUBBLE_API}/TicketType`, config)
     ticketTypes = dataTicketTypes.response.results
@@ -749,11 +750,19 @@ app.get("/insert-data-bubble", async (req, res) => {
     for (let index = 0; index < resultsTicketOrders.length; index++) {
         const ticketOrder = resultsTicketOrders[index]
         console.log("Member: ",ticketOrder.ordering_Member) 
-        const {data} = await axios.get(`${process.env.BUBBLE_API}/Member/${ticketOrder.ordering_Member}`, config)
-        if(data?.response == undefined) {
-            console.log("no se ha resutelto") 
-        };
-
+        let data 
+        let completed = false
+        do{
+            try{
+                let result = await axios.get(`${process.env.BUBBLE_API}/Member/${ticketOrder.ordering_Member}`, config)    
+                data = result.data
+                completed = data?.response!=undefined
+            }catch(err){
+                console.log("err",err)
+            }
+        }while(!completed)
+        
+ 
         const membership = membershipsTypes.find((ms) => {
             return data?.response?.membership === ms._id
         })
@@ -776,21 +785,17 @@ app.get("/insert-data-bubble", async (req, res) => {
             arrivaldate: "",
             accessdate: "",
             limitdate: "",
-            user_role: {
-                role: "asistente"
-            },
-            organization_role: {
-                qr_code: ticketOrder._id,
-                buyerSmartId: data?.response?.pin,
-                buyerName: data?.response?.first_name,
-                buyerRank: membership?.name,
-                ticketPrice: -1,
-                ticketType: ""
-            }
+            qr_code: ticketOrder._id,
+            buyerSmartId: data?.response?.pin,
+            buyerName: data?.response?.first_name,
+            buyerRank: membership?.name,
+            ticketPrice: -1,
+            ticketType: ""
+            
         }
         let badgeType = ticketTypes.find(type => type?._id === ticketOrder?.original_TicketType)
-        newTicket.organization_role.ticketPrice = badgeType.price
-        newTicket.organization_role.ticketType = badgeType._id
+        newTicket.ticketPrice = badgeType.price
+        newTicket.ticketType = badgeType._id
 
         if(badgeType.name.toLowerCase().trim().includes("platinum")){
             newTicket.badge="platinum"
@@ -800,10 +805,10 @@ app.get("/insert-data-bubble", async (req, res) => {
             newTicket.badge="vip"
         }
         if(badgeType.name.toLowerCase().trim().includes("gold a")){
-            newTicket.badge="gold a"
+            newTicket.badge="gold-a"
         }
         if(badgeType.name.toLowerCase().trim().includes("gold b")){
-            newTicket.badge="gold b"
+            newTicket.badge="gold-b"
         }
         //console.log("badgeType",badgeType.name)
         console.log("newTicket.badge",newTicket.badge)
