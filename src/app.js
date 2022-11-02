@@ -160,16 +160,21 @@ app.post("/tag_id-user", async (req, res) => {
                         if (["_id"].indexOf(i) >= 0) continue;
                         if (!Object.prototype.hasOwnProperty.call(respuesta._doc, i)) continue;
                         target[i] = respuesta._doc[i];
-                    }
+                    }                    
+                    
                     const newUserTagId = new UserTagId({
                         tag_id: req.body.tag_id,
                         user_id:respuesta._id,
                         ...target
                     })
+
                     try{
+                        newUserTagId.tag_id=req.body.tag_id
+                        console.log("newUserTagId",newUserTagId)
                         await newUserTagId.save()
                         res.json(newUserTagId)
                     }catch(err){
+                        console.log(err)
                         res.status(500).json({error:err});
                     }
                 } else {
@@ -206,12 +211,14 @@ app.post("/tag_id-user", async (req, res) => {
                         res.json(newUserTagId)
                         return;
                     } catch (error) {
+                        console.log(err)
                         res.status(500).json(error)
                         return;
                     }
                 }
             })
     } catch (error) {
+        console.log(err)
         res.status(500).json(error)
         return;
     }
@@ -255,6 +262,68 @@ app.get("/tag-ids-by-user-id", async (req, res) => {
         console.log(users)
         return;
 
+    } catch (error) {
+        res.json(error)
+        return;
+    }
+})
+app.post("/new-entrance-with-date", (req, res) => {
+    console.log(req.body)
+    try {        
+        const user = UserTagId.findOne({
+            tag_id: req.body.tag_id
+        }).then(async (response) => {
+            if(response){
+                var target = {};
+                for (var i in response._doc) {
+                    if (["_id"].indexOf(i) >= 0) continue;
+                    if (!Object.prototype.hasOwnProperty.call(response._doc, i)) continue;
+                    target[i] = response._doc[i];
+                }
+                const newEntrance = new EntranceControl({
+                    ...target,
+                    id_lectora: req.body.id_lectora,
+                    event_type: req.body.event_type,
+                    created: new Date(req.body.created)
+                })
+                await newEntrance.save()
+                res.json(newEntrance)
+            } else {
+                const target = {
+                    tag_id: req.body.tag_id,
+                    registered_by_user_id: 0,
+                    user_id: "_desconocido",
+                    first_name: "_desconocido",
+                    last_name: "_desconocido",
+                    email: "",
+                    identification_img_url: "",
+                    identification_img_file_name: "",
+                    mobile_number: "",
+                    badge: "",
+                    adminuser: "",
+                    adminpassword: "",
+                    adminsub: "",
+                    arrivaldate: "",
+                    accessdate: "",
+                    limitdate: "",
+                    user_role: {
+                        role: "_desconocido"
+                    },
+                    organization_role: {
+                        region: "_desconocido",
+                        zona: "_desconocido",
+                        distrito: "_desconocido",
+                        tienda: "_desconocido",
+
+                    },
+                    id_lectora: req.body.id_lectora,
+                    event_type: req.body.event_type
+                }
+                const newEntrance = new EntranceControl(target);
+                await newEntrance.save()
+                res.json(newEntrance)
+            }
+        })
     } catch (error) {
         res.json(error)
         return;
@@ -368,6 +437,11 @@ app.post("/admonitions", async (req, res) => {
                 }
                 target.points = e.points
                 target.id_lectora = e.id_lectora
+                try{
+                    target.createdAt = new Date()    
+                }catch(e){
+                    console.log("hot fix en producción en fallo!, me copian??");
+                } 
                 return target
             } else {
                 const target = new Admonition({
