@@ -25,18 +25,6 @@ const message = "Success";
 let membershipsTypes = []
 let ticketTypes = []
 
-const typeOfTicket = (ticket) => {
-    let badge = ""
-    switch (ticket) {
-        case "Acceso - Zona Gold A":
-            badge = "gold-a"
-            break;
-    
-        default:
-            break;
-    }
-}
-
 app.get("/", async (req,res) => {
     const events = await Event.find()
     res.status(200).json(events[0])
@@ -907,6 +895,7 @@ app.get("/insert-data-bubble", async (req, res) => {
     let remaining = 0
     let resultsTicketOrders = []
     let dataTicketOrder = null;
+    
     const config = {
         headers: {
             "Authorization": `Bearer ${process.env.BUBBLE_API_KEY}`
@@ -922,35 +911,35 @@ app.get("/insert-data-bubble", async (req, res) => {
     const {data: dataMembershipTypes} = await axios.get(`${process.env.BUBBLE_API}/MembershipType`, config)
     membershipsTypes = dataMembershipTypes.response.results
     console.log(membershipsTypes)
-    dataTicketOrder = await axios.get(`${process.env.BUBBLE_API}/TicketOrder`, config);
-    config.params.cursor = dataTicketOrder.data.response.cursor
-    remaining = dataTicketOrder.data.response.remaining
-    resultsTicketOrders.push(...dataTicketOrder.data.response.results)
     do {
         console.log("while", config.params.cursor, remaining)
         dataTicketOrder = await axios.get(`${process.env.BUBBLE_API}/TicketOrder`, config);
         remaining = dataTicketOrder.data.response.remaining
-        resultsTicketOrders.push(...dataTicketOrder.data.response.results)
+        //Filter non test tickets, i.e price different of $1 USD
+        let nonTestTickets = dataTicketOrder.data.response.results.filter(ticketOrder => ticketOrder.ticket_type_price!=1 &&  ticketOrder.status =='PAYED_WITH_STRIPE')
+        console.log ("non test tickets in interation: ",nonTestTickets.length)
+        resultsTicketOrders.push(...nonTestTickets)
         config.params.cursor += config.params.limit
     } while (remaining > 0);
     config.params.cursor = 0
     const response = []
+    console.log("resultsTicketOrders.length",resultsTicketOrders.length)
     console.log("Es momento de resolver las promises")
     for (let index = 0; index < resultsTicketOrders.length; index++) {
         const ticketOrder = resultsTicketOrders[index]
 
-        const {data} = await axios.get(`${process.env.BUBBLE_API}/Member/${resultsTicketOrders[index].ordering_Member}`, config)
+        console.log("Member: ",ticketOrder.ordering_Member) 
+        const {data} = await axios.get(`${process.env.BUBBLE_API}/Member/${ticketOrder.ordering_Member}`, config)
         if(data?.response == undefined) {
             console.log("no se ha resutelto") 
-            return
         };
 
         const membership = membershipsTypes.find((ms) => {
             return data?.response?.membership === ms._id
         })
         
-        console.log(data?.response, index)
-        response.push({
+        console.log(data?.response.first_name, index)
+        let newTicket = {
             event_code: "Evolution2022",
             registered_by_user_id: -1,
             identification_img_url: "",
@@ -960,7 +949,7 @@ app.get("/insert-data-bubble", async (req, res) => {
             last_name: "",
             mobile_number: "",
             // TODO: switch for ticket type to return slug
-            badge: ticketTypes.find(type => type?._id === ticketOrder?.original_TicketType).name.replaceAll(" ", "-").toLowerCase().trim(),
+            badge: "",
             adminuser: "",
             adminpassword: "",
             adminsub: "",
@@ -974,10 +963,33 @@ app.get("/insert-data-bubble", async (req, res) => {
                 qr_code: ticketOrder._id,
                 buyerSmartId: data?.response?.pin,
                 buyerName: data?.response?.first_name,
-                buyerRange: membership?.name
+                buyerRank: membership?.name,
+                ticketPrice: -1,
+                ticketType: ""
                 
             }
-        })
+        }
+        let badgeType = ticketTypes.find(type => type?._id === ticketOrder?.original_TicketType)
+        newTicket.organization_role.ticketPrice = badgeType.price
+        newTicket.organization_role.ticketType = badgeType._id
+
+        if(badgeType.name.toLowerCase().trim().includes("platinum")){
+            newTicket.badge="platinum"
+
+        }
+        if(badgeType.name.toLowerCase().trim().includes("vip")){
+            newTicket.badge="vip"
+        }
+        if(badgeType.name.toLowerCase().trim().includes("gold a")){
+            newTicket.badge="gold a"
+        }
+        if(badgeType.name.toLowerCase().trim().includes("gold b")){
+            newTicket.badge="gold b"
+        }
+        //console.log("badgeType",badgeType.name)
+        console.log("newTicket.badge",newTicket.badge)
+
+        response.push(newTicket)
         
     }
     await User.insertMany(response)
