@@ -60,38 +60,6 @@ app.post("/new-user", async (req, res) => {
     }
 })
 
-app.get("/region", async (req, res) => {
-    try {
-        const users = await User.find({
-            "organization_role.region": req.query.region
-        })
-        console.log(req.query)
-        const response = []
-        try {
-            if(req.query.users){
-                users.forEach((e) => {
-                    if(e.first_name.toLowerCase().startsWith(req.query.users) || 
-                    e.last_name.toLowerCase().startsWith(req.query.users)) {
-                        response.push(e)
-                    }
-                })
-                res.json(response)
-                return
-            } else {
-                res.json(users)
-                return
-            }
-        } catch (error) {
-            res.json(error)
-            return
-        }
-    } catch (error) {
-        console.log(error);
-        res.json.status(500)({mensaje: "Ocurrió un error. Vuelve a intentarlo"})
-    }
-})
-
-
 app.get("/users", async (req, res) => {
     try {
         let query = {}
@@ -99,46 +67,14 @@ app.get("/users", async (req, res) => {
             query["_id"] = req.query.user_id
             console.log(query, query)
         }
-        if(req.query.zona && req.query.zona.length>0){
-            query["organization_role.zona"] = req.query.zona
-            console.log('query',query)
-        }
-        if(req.query.distrito && req.query.distrito.length>0){
-            query["organization_role.distrito"] = req.query.distrito
-            console.log('query',query)
-        }
-        if(req.query.tienda && req.query.tienda.length>0){
-            query["organization_role.tienda"] = req.query.tienda
-            console.log('query',query)
-        }
-        if(req.query.region && req.query.region.length>0){
-            var regexp = new RegExp( req.query.region,'i');
-            query["organization_role.region"] = regexp
-            console.log('query at region',query)
-        }
-        if(req.query.first_name && req.query.first_name.length>0){
-            var regexp = new RegExp(req.query.first_name,'i');
-            query["first_name"] = regexp
-            console.log('query',query)
-        }
-        if(req.query.last_name && req.query.last_name.length>0){
-            var regexp = new RegExp( req.query.last_name,'i');
-            query["last_name"] = regexp
-            console.log('query',query)
-        }
-        // Object.entries(req.query).forEach((key) => {
-        //     const field = key[0]
-        //     const value = req.query[field]
-        //     if(value.length > 0){
-        //         if(field.startsWith("organization_role")){
-        //             const regexp = new RegExp(value,'i');
-        //             query[`organization_role.${field.replace("organization_role_", "")}`] = regexp
-        //         } else {
-        //             const regexp = new RegExp(value, "i")
-        //             query[field] = regexp
-        //         }
-        //     }
-        // })
+        Object.entries(req.query).forEach((key) => {
+            const field = key[0]
+            const value = req.query[field]
+            if(value.length > 0){
+                const regexp = new RegExp(value,'i');
+                query[field] = regexp
+            }
+        })
         console.log('req.query', req.query)
         console.log("query",query)
 
@@ -170,51 +106,6 @@ app.get("/users", async (req, res) => {
     }
 })
 
-// Second sprint: find users by store and first letters of the last name
-
-app.get("/empresa", async (req, res) => {
-    try {   
-
-        try {   
-            const users = await User.find({
-                "organization_role.empresa": req.query.empresa
-            }).sort(
-                [
-                    ['organization_role.zona',1],
-                    ['organization_role.distrito',1],
-                    ['user_role.role',-1],
-                    ['organization_role.region',1],
-                    ['organization_role.teinda',1]
-                ]
-            )
-
-            const response = []
-            
-            if(req.query.users){
-                users.forEach((e) => {
-                    if(e.first_name.toLowerCase().startsWith(req.query.users) || 
-                    e.last_name.toLowerCase().startsWith(req.query.users)) {
-                        response.push(e)
-                    }
-                })
-                res.json(response)
-                return;
-            } else {
-                res.json(users)
-                return;
-            }
-        } catch (error) {
-            res.json(error)
-            return;
-        }   
-
-    } catch (error) {
-        console.log(error);
-        res.status(500).json({mensaje: "Ocurrió un error. Vuelve a intentarlo"})
-    }
-})
-
-// Second sprint: find user by id
 app.get("/user/:id", async (req, res) => {
     try {
         
@@ -254,76 +145,6 @@ app.post("/new-store", async (req, res) => {
         res.json({message: "Nueva tienda creada satisfactoriamente", ...newStore._doc})
     } catch (error) {
         res.json({message: "Ocurrió un error.", error})
-    }
-})
-
-// Third sprint: get all stores and get stores by its zone, region or distrit
-app.get("/stores", async (req, res) => {
-    try {        
-        if(Object.keys(req.query).length === 0) {
-            const stores = await Store.find()
-            res.json(stores)
-            return;
-        } else {
-            const { region, zona, distrito } = req.query
-            const query = {}
-
-            if(zona){
-                query.zona = zona
-            }
-            if(distrito){
-                query.distrito = distrito
-            }
-            if(region){
-                query.region = region
-            }
-
-            const stores = await Store.find(query)
-            
-            res.json(stores)
-            return;
-        }
-    } catch (error) {
-        res.json(error)
-        return;
-    }
-})
-
-app.get("/tag_id-users/all", async (req, res) => {
-    try {        
-        if(Object.keys(req.query).length === 0) {
-
-            const users = await UserTagId.find()
-            res.json(users)
-            return;
-
-        } else {
-
-            const { region, zona, distrito, tienda } = req.query
-            let query = {}
-
-            if(zona){
-                query['organization_role.zona'] = zona
-            }
-            if(distrito){
-                query['organization_role.distrito'] = distrito
-            }
-            if(region){
-                query['organization_role.region'] = region
-            }
-            if(tienda){
-                query['organization_role.tienda'] = tienda
-            }
-
-            const users = await UserTagId.find(query)
-            console.log(users)
-            res.json(users)
-            return;
-
-        }
-    } catch (error) {
-        res.json(error)
-        return;
     }
 })
 
@@ -789,9 +610,9 @@ app.get("/admonition-by-tag", async (req, res) => {
     res.json(userWithAdmonitions).status(200)
 })
 
-app.get("/regiones", async(req, res) => {
-    const regiones = await User.distinct('organization_role.region');
-    res.json(regiones);
+app.get("/distinct-value/:distinct", async(req, res) => {
+    const distinctValues = await User.distinct(req.params.distinct)
+    res.status(200).json(distinctValues)
 })
 
 app.get('/config-entrance', async (req, res) => {
@@ -833,13 +654,14 @@ app.get("/insert-data-bubble", async (req, res) => {
     let remaining = 0
     let resultsTicketOrders = []
     let dataTicketOrder = null;
+    // TODO get last user in database createdAt -1
     const config = {
         headers: {
             "Authorization": `Bearer ${process.env.BUBBLE_API_KEY}`
         },
         params: {
             limit: 100,
-            cursor: 0
+            cursor: 0 // user.cursor +1 || 0
         }
     }
     const {data: dataTicketTypes} = await axios.get(`${process.env.BUBBLE_API}/TicketType`, config)
@@ -848,13 +670,10 @@ app.get("/insert-data-bubble", async (req, res) => {
     const {data: dataMembershipTypes} = await axios.get(`${process.env.BUBBLE_API}/MembershipType`, config)
     membershipsTypes = dataMembershipTypes.response.results
     console.log(membershipsTypes)
-    dataTicketOrder = await axios.get(`${process.env.BUBBLE_API}/TicketOrder`, config);
-    config.params.cursor = dataTicketOrder.data.response.cursor
-    remaining = dataTicketOrder.data.response.remaining
-    resultsTicketOrders.push(...dataTicketOrder.data.response.results)
     do {
         console.log("while", config.params.cursor, remaining)
         dataTicketOrder = await axios.get(`${process.env.BUBBLE_API}/TicketOrder`, config);
+        fdasdfasdf
         remaining = dataTicketOrder.data.response.remaining
         resultsTicketOrders.push(...dataTicketOrder.data.response.results)
         config.params.cursor += config.params.limit
@@ -864,8 +683,8 @@ app.get("/insert-data-bubble", async (req, res) => {
     console.log("Es momento de resolver las promises")
     for (let index = 0; index < resultsTicketOrders.length; index++) {
         const ticketOrder = resultsTicketOrders[index]
-
         const {data} = await axios.get(`${process.env.BUBBLE_API}/Member/${resultsTicketOrders[index].ordering_Member}`, config)
+
         if(data?.response == undefined) {
             console.log("no se ha resutelto") 
             return
@@ -900,8 +719,8 @@ app.get("/insert-data-bubble", async (req, res) => {
                 qr_code: ticketOrder._id,
                 buyerSmartId: data?.response?.pin,
                 buyerName: data?.response?.first_name,
-                buyerRange: membership?.name
-                
+                buyerRange: membership?.name,
+                cursor: ""
             }
         })
         

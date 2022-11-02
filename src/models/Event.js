@@ -6,9 +6,6 @@ const EventSchema = new Schema({
         required: true,
 
     },
-    organization_role_for_search: [{
-        field: String
-    }],
     organization_role_for_table: [{
         field: String
     }]
