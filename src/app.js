@@ -124,7 +124,6 @@ app.put('/user/:id', async (req, res) => {
     }
 })
 
-// Third sprint: store registration
 app.post("/new-store", async (req, res) => {
     try {        
         const newStore = new Store(req.body);
@@ -136,7 +135,6 @@ app.post("/new-store", async (req, res) => {
     }
 })
 
-// Fourth sprint: embed user and tag-id
 app.post("/tag_id-user", async (req, res) => {
     try {
         User.findById(req.body.id)
@@ -222,7 +220,6 @@ app.put('/tag_id-user/:id', async (req, res) => {
     }
 })
 
-// Fourth sprint: get a user by giving it a tag_id
 app.get("/tag_id-user", async (req, res) => {
     try {
         const user = await UserTagId.findOne({
@@ -318,8 +315,6 @@ app.post("/new-entrance-with-date", (req, res) => {
     }
 })
 
-
-// Fifth sprint: create the entrance and get out
 app.post("/new-entrance", (req, res) => {
     try {        
         const user = UserTagId.findOne({
@@ -381,7 +376,6 @@ app.post("/new-entrance", (req, res) => {
     }
 })
 
-// Sixth sprint: get array of questionnaries
 app.get("/questionnaries", async (req, res) => {
     try {        
         if (Object.keys(req.query).length >= 1) {
@@ -397,7 +391,6 @@ app.get("/questionnaries", async (req, res) => {
     }
 })
 
-// Sixth sprint: post questionnarie
 app.post("/questionnarie",async (req, res) => {
     try {        
         const newQuestionnarie = new Questionnaire(req.body);
@@ -410,7 +403,6 @@ app.post("/questionnarie",async (req, res) => {
     }
 })
 
-// Seventh sprint: post many admonitions
 app.post("/admonitions", async (req, res) => {
     try {
         const funcion = req.body.map(async e => {
@@ -478,7 +470,6 @@ app.post("/admonitions", async (req, res) => {
     }
 })
 
-// Eighth sprint: post the answers
 app.post("/answers", (req, res) => {
     try {        
         const arrayDe = req.body.map(async (object, index) => {
