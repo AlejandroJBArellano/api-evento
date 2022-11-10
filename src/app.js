@@ -281,16 +281,8 @@ app.post("/new-entrance-with-date", (req, res) => {
                     first_name: "_desconocido",
                     last_name: "_desconocido",
                     email: "",
-                    identification_img_url: "",
-                    identification_img_file_name: "",
                     mobile_number: "",
                     badge: "",
-                    adminuser: "",
-                    adminpassword: "",
-                    adminsub: "",
-                    arrivaldate: "",
-                    accessdate: "",
-                    limitdate: "",
                     user_role: {
                         role: "_desconocido"
                     },
@@ -317,24 +309,10 @@ app.post("/new-entrance-with-date", (req, res) => {
 
 app.post("/new-entrance", (req, res) => {
     try {        
-        const user = UserTagId.findOne({
+        UserTagId.findOne({
             tag_id: req.body.tag_id
         }).then(async (response) => {
-            if(response){
-                var target = {};
-                for (var i in response._doc) {
-                    if (["_id"].indexOf(i) >= 0) continue;
-                    if (!Object.prototype.hasOwnProperty.call(response._doc, i)) continue;
-                    target[i] = response._doc[i];
-                }
-                const newEntrance = new EntranceControl({
-                    ...target,
-                    id_lectora: req.body.id_lectora,
-                    event_type: req.body.event_type
-                })
-                await newEntrance.save()
-                res.json(newEntrance)
-            } else {
+            if(!response) {
                 const target = {
                     tag_id: req.body.tag_id,
                     registered_by_user_id: 0,
@@ -342,16 +320,8 @@ app.post("/new-entrance", (req, res) => {
                     first_name: "_desconocido",
                     last_name: "_desconocido",
                     email: "",
-                    identification_img_url: "",
-                    identification_img_file_name: "",
                     mobile_number: "",
                     badge: "",
-                    adminuser: "",
-                    adminpassword: "",
-                    adminsub: "",
-                    arrivaldate: "",
-                    accessdate: "",
-                    limitdate: "",
                     user_role: {
                         role: "_desconocido"
                     },
@@ -367,11 +337,23 @@ app.post("/new-entrance", (req, res) => {
                 }
                 const newEntrance = new EntranceControl(target);
                 await newEntrance.save()
-                res.json(newEntrance)
+                res.status(200).json(newEntrance)
+            };
+            let target = {};
+            for (var i in response._doc) {
+                if (["_id"].indexOf(i) >= 0 || !Object.prototype.hasOwnProperty.call(response._doc, i)) continue;
+                target[i] = response._doc[i];
             }
+            const newEntrance = new EntranceControl({
+                ...target,
+                id_lectora: req.body.id_lectora,
+                event_type: req.body.event_type
+            })
+            await newEntrance.save()
+            res.status(200).json(newEntrance)
         })
     } catch (error) {
-        res.json(error)
+        res.status(500).json(error)
         return;
     }
 })
