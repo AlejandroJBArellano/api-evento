@@ -11,7 +11,8 @@ const UserTagIdSchema = new Schema({
 }, {
     versionKey: false,
     timestamps: true,
-    strict: false
+    strict: false,
+    collection: "usertagids"
 }).add(UserSchema)
 
 module.exports = model("UserTagId", UserTagIdSchema)
