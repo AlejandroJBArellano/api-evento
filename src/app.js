@@ -5,6 +5,7 @@ const axios = require("axios");
 const getExhibitors = require("./exportingDatabase/getExhibitors");
 const getStores = require("./exportingDatabase/getStores");
 const getUsers = require("./exportingDatabase/getUsers");
+const questionnairesMethods = require("./handlers/questionnaires");
 const ConfigEntrance = require("./models/ConfigEntrance");
 const ConfigTags = require("./models/ConfigTags");
 const Impresora = require("./models/Impresora");
@@ -358,32 +359,9 @@ app.post("/new-entrance", (req, res) => {
     }
 })
 
-app.get("/questionnaires", async (req, res) => {
-    try {        
-        if (Object.keys(req.query).length >= 1) {
-            const questionnaires = await Questionnaire.find(req.query);
-            res.json(questionnaires)
-            return;
-        } const questionnaires = await Questionnaire.find();
-        res.status(200).json(questionnaires)
-        return;
-    } catch (error) {
-        res.json(error)
-        return;
-    }
-})
-
-app.post("/questionnaire",async (req, res) => {
-    try {        
-        const newQuestionnaire = new Questionnaire(req.body);
-        await newQuestionnaire.save()
-        res.status(200).json(newQuestionnaire)
-        return;
-    } catch (error) {
-        res.status(500).json(error)
-        return
-    }
-})
+app.route("/questionnaires")
+    .get(questionnairesMethods.get)
+    .post(questionnairesMethods.create)
 
 app.post("/admonitions", async (req, res) => {
     try {
@@ -629,7 +607,6 @@ app.get("/top-admonitions", async (req, res) => {
     res.json(admonitions).status(200)
 })
 
-// TODO: match By Tag ID and return whole points
 app.get("/admonition-by-tag", async (req, res) => {
     const admonition = await Admonition.aggregate([
         {
