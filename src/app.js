@@ -376,14 +376,14 @@ app.post("/new-entrance", (req, res) => {
     }
 })
 
-app.get("/questionnaries", async (req, res) => {
+app.get("/questionnaires", async (req, res) => {
     try {        
         if (Object.keys(req.query).length >= 1) {
             const questionnaires = await Questionnaire.find(req.query);
             res.json(questionnaires)
             return;
         } const questionnaires = await Questionnaire.find();
-        res.json(questionnaires)
+        res.status(200).json(questionnaires)
         return;
     } catch (error) {
         res.json(error)
@@ -391,11 +391,11 @@ app.get("/questionnaries", async (req, res) => {
     }
 })
 
-app.post("/questionnarie",async (req, res) => {
+app.post("/questionnaire",async (req, res) => {
     try {        
-        const newQuestionnarie = new Questionnaire(req.body);
-        await newQuestionnarie.save()
-        res.json(newQuestionnarie)
+        const newQuestionnaire = new Questionnaire(req.body);
+        await newQuestionnaire.save()
+        res.status(200).json(newQuestionnaire)
         return;
     } catch (error) {
         res.status(500).json(error)
