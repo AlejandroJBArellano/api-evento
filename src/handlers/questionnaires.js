@@ -3,11 +3,7 @@ const Questionnaire = require("../models/Questionnaire");
 const questionnairesMethods = {
     get: async (req, res) => {
         try {        
-            if (Object.keys(req.query).length >= 1) {
-                const questionnaires = await Questionnaire.find(req.query);
-                res.json(questionnaires)
-                return;
-            } const questionnaires = await Questionnaire.find();
+            const questionnaires = await Questionnaire.find(req.query);
             res.status(200).json(questionnaires)
             return;
         } catch (error) {

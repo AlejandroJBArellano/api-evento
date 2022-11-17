@@ -19,6 +19,7 @@ Questionnaire = require("./models/Questionnaire"),
 Admonition = require("./models/Admonition"),
 Answers = require("./models/Answers"),
 Event = require("./models/Event");
+const diacriticSensitiveRegex = require("./utils/diacriticSensitiveRegex");
 
 // Messages
 const message = "Success";
@@ -58,9 +59,10 @@ app.get("/users", async (req, res) => {
         }
         Object.entries(req.query).forEach((key) => {
             const field = key[0]
-            const value = req.query[field]
+            const value = diacriticSensitiveRegex(req.query[field]);
             if(value.length > 0){
-                const regexp = new RegExp(value,'i');
+                const regexp = new RegExp(value,'i',);
+                console.log(regexp)
                 query[field] = regexp
             }
         })
@@ -125,17 +127,6 @@ app.put('/user/:id', async (req, res) => {
     }
 })
 
-app.post("/new-store", async (req, res) => {
-    try {        
-        const newStore = new Store(req.body);
-        await newStore.validate()
-        await newStore.save()
-        res.json({message: "Nueva tienda creada satisfactoriamente", ...newStore._doc})
-    } catch (error) {
-        res.json({message: "Ocurrió un error.", error})
-    }
-})
-
 app.post("/tag_id-user", async (req, res) => {
     try {
         User.findById(req.body.id)
@@ -172,16 +163,8 @@ app.post("/tag_id-user", async (req, res) => {
                         first_name: "_desconocido",
                         last_name: "_desconocido",
                         email: "",
-                        identification_img_url: "",
-                        identification_img_file_name: "",
                         mobile_number: "",
                         badge: "",
-                        adminuser: "",
-                        adminpassword: "",
-                        adminsub: "",
-                        arrivaldate: "",
-                        accessdate: "",
-                        limitdate: "",
                         user_role: {
                             role: "_desconocido"
                         },
@@ -266,6 +249,7 @@ app.post("/new-entrance-with-date", (req, res) => {
                     if (!Object.prototype.hasOwnProperty.call(response._doc, i)) continue;
                     target[i] = response._doc[i];
                 }
+                // TODO: one method for entrance and handling the created just if the body contains it
                 const newEntrance = new EntranceControl({
                     ...target,
                     id_lectora: req.body.id_lectora,
@@ -314,6 +298,7 @@ app.post("/new-entrance", (req, res) => {
             tag_id: req.body.tag_id
         }).then(async (response) => {
             if(!response) {
+                // TODO: target without embed properties
                 const target = {
                     tag_id: req.body.tag_id,
                     registered_by_user_id: 0,
