@@ -102,7 +102,7 @@ app.get("/user/:id", async (req, res) => {
         
         const {id} = req.params
         const user = await User.findById(id)
-
+        // If not user found, it returns an empty object
         if(!user) {
             res.json({})
             return;
@@ -191,16 +191,6 @@ app.post("/tag_id-user", async (req, res) => {
         console.log(err)
         res.status(500).json(error)
         return;
-    }
-})
-
-app.put('/tag_id-user/:id', async (req, res) => {
-    try {        
-        UserTagId.findByIdAndUpdate(req.params.id, req.body, {returnDocument: 'after'})
-            .then(e => res.json(e).status(200))
-            .catch(err => res.json(err).status(500));
-    } catch (error) {
-        res.json(error).status(500)
     }
 })
 
@@ -454,16 +444,8 @@ app.post("/answers", (req, res) => {
                     first_name: "_desconocido",
                     last_name: "_desconocido",
                     email: "",
-                    identification_img_url: "",
-                    identification_img_file_name: "",
                     mobile_number: "",
                     badge: "",
-                    adminuser: "",
-                    adminpassword: "",
-                    adminsub: "",
-                    arrivaldate: "",
-                    accessdate: "",
-                    limitdate: "",
                     user_role: {
                         role: "_desconocido"
                     },
