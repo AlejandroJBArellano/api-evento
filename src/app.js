@@ -1,5 +1,5 @@
-const { Router } = require("express"),
-app = Router();
+const { Router } = require("express");
+const app = Router();
 
 const axios = require("axios");
 const getExhibitors = require("./exportingDatabase/getExhibitors");
@@ -11,14 +11,15 @@ const ConfigTags = require("./models/ConfigTags");
 const Impresora = require("./models/Impresora");
 const Lectora = require("./models/Lectora");
 // Models
-const {User} = require("./models/User"),
-Store = require("./models/Store"),
-UserTagId = require("./models/UserTagId"),
-EntranceControl = require("./models/EntranceControl"),
-Questionnaire = require("./models/Questionnaire"),
-Admonition = require("./models/Admonition"),
-Answers = require("./models/Answers"),
-Event = require("./models/Event");
+const {User} = require("./models/User");
+const Store = require("./models/Store");
+const UserTagId = require("./models/UserTagId");
+const EntranceControl = require("./models/EntranceControl");
+const Questionnaire = require("./models/Questionnaire");
+const Admonition = require("./models/Admonition");
+const Recorder = require("./models/Recorder")
+const Answers = require("./models/Answers");
+const Event = require("./models/Event");
 const diacriticSensitiveRegex = require("./utils/diacriticSensitiveRegex");
 
 // Messages
@@ -64,6 +65,7 @@ app.get("/users", async (req, res) => {
                 const regexp = new RegExp(value,'i',);
                 console.log(regexp)
                 query[field] = regexp
+                query['name'] = regexp
             }
         })
         console.log('req.query', req.query)
@@ -343,7 +345,7 @@ app.post("/admonitions", async (req, res) => {
         const funcion = req.body.map(async e => {
             const user = await UserTagId.findOne({tag_id: e.tag_id})
             if(user){
-                delete user._id
+                user._id = undefined
                 let target = {}
                 for (var i in user) {
                     if (["_id"].indexOf(i) >= 0) continue;
@@ -413,7 +415,7 @@ app.post("/answers", (req, res) => {
             })
             if(userTagId){
                 const user = userTagId._doc
-                delete user._id
+                user._id = undefined
                 const newAnswer = new Answers({
                     track: req.body[index].track,
                     ...user,
@@ -673,7 +675,7 @@ app.get("/insert-data-bubble", async (req, res) => {
             try{
                 let result = await axios.get(`${process.env.BUBBLE_API}/Member/${ticketOrder.ordering_Member}`, config)    
                 data = result.data
-                completed = data?.response!=undefined
+                completed = data?.response!==undefined
             }catch(err){
                 console.log("err",err)
             }
@@ -735,6 +737,26 @@ app.get("/insert-data-bubble", async (req, res) => {
     }
     await User.insertMany(response)
     res.status(200).json(response)
+});
+
+app.post("/login", async (req, res) => {
+    const {pin} = req.body;
+
+    const recorder = await Recorder.find({
+        pin
+    });
+
+    if(!recorder){
+        return res.status(400).json({
+            error: "Recorder not found!"
+        })
+    }
+
+    return res.status(200).json({
+        data: recorder,
+        success: true
+    })
+
 })
 
 
