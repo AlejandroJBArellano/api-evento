@@ -3,19 +3,16 @@ const app = Router();
 
 const axios = require("axios");
 const getExhibitors = require("./exportingDatabase/getExhibitors");
-const getStores = require("./exportingDatabase/getStores");
 const getUsers = require("./exportingDatabase/getUsers");
 const questionnairesMethods = require("./handlers/questionnaires");
+// Models
+const {User} = require("./models/User");
 const ConfigEntrance = require("./models/ConfigEntrance");
 const ConfigTags = require("./models/ConfigTags");
 const Impresora = require("./models/Impresora");
 const Lectora = require("./models/Lectora");
-// Models
-const {User} = require("./models/User");
-const Store = require("./models/Store");
 const UserTagId = require("./models/UserTagId");
 const EntranceControl = require("./models/EntranceControl");
-const Questionnaire = require("./models/Questionnaire");
 const Admonition = require("./models/Admonition");
 const Recorder = require("./models/Recorder")
 const Answers = require("./models/Answers");
@@ -41,7 +38,9 @@ app.get("/config-tags", async (req, res) => {
 app.post("/new-user", async (req, res) => {
     try {        
         console.log("New User: req.body",req.body)
+        const searchComposite = Object.values(req.body).join(" ")
         const newUser = new User(req.body)
+        newUser.searchComposite = searchComposite
         await newUser.validate()
         await newUser.save()
         res.json({message: "success", ...newUser._doc})
@@ -65,7 +64,6 @@ app.get("/users", async (req, res) => {
                 const regexp = new RegExp(value,'i',);
                 console.log(regexp)
                 query[field] = regexp
-                query['name'] = regexp
             }
         })
         console.log('req.query', req.query)
@@ -87,7 +85,7 @@ app.get("/users", async (req, res) => {
             return {
                 ...user._doc,
                 countTagId: tag_ids.filter(userTagId => {
-                    return userTagId.user_id == user._id
+                    return userTagId.user_id === user._id
                 }).length
             }
         })
@@ -657,7 +655,7 @@ app.get("/insert-data-bubble", async (req, res) => {
         dataTicketOrder = await axios.get(`${process.env.BUBBLE_API}/TicketOrder`, config);
         remaining = dataTicketOrder.data.response.remaining
         //Filter non test tickets, i.e price different of $1 USD
-        let nonTestTickets = dataTicketOrder.data.response.results.filter(ticketOrder => ticketOrder.ticket_type_price!=1 &&  ticketOrder.status =='PAYED_WITH_STRIPE')
+        let nonTestTickets = dataTicketOrder.data.response.results.filter(ticketOrder => ticketOrder.ticket_type_price!==1 &&  ticketOrder.status ==='PAYED_WITH_STRIPE')
         console.log ("non test tickets in interation: ",nonTestTickets.length)
         resultsTicketOrders.push(...nonTestTickets)
         config.params.cursor += config.params.limit
@@ -742,7 +740,7 @@ app.get("/insert-data-bubble", async (req, res) => {
 app.post("/login", async (req, res) => {
     const {pin} = req.body;
 
-    const recorder = await Recorder.find({
+    const recorder = await Recorder.findOne({
         pin
     });
 
