@@ -769,5 +769,34 @@ app.post("/replacement", async (req, res) => {
     })
 })
 
+app.get("/attendees", async (req, res) => {
+    try {
+        const paginationQueries = ["skip", "limit"]
+        const query = {}
+        Object.entries(req.query).forEach((key) => {
+            if(paginationQueries.includes(key)) return;
+            const field = key[0]
+            const value = diacriticSensitiveRegex(req.query[field]);
+            if(value.length > 0){
+                const regexp = new RegExp(value,'i',);
+                console.log(regexp)
+                query[field] = regexp
+            }
+        })
+        console.log('req.query', req.query)
+        console.log("query",query)
+    
+        const users = await User.find(query)
+        res.status(200).json({
+            data: users,
+            success: true
+        })
+    } catch (error) {
+        res.status(500).json({
+            error,
+            success:false
+        })
+    }
+})
 
 module.exports = app;
