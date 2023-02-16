@@ -1,4 +1,4 @@
-const { Schema } = require("mongoose");
+const { Schema, model } = require("mongoose");
 
 const Recorder = new Schema({
     name: {
@@ -15,4 +15,4 @@ const Recorder = new Schema({
     }
 });
 
-export default Recorder
+module.exports = model("Recorder", Recorder)

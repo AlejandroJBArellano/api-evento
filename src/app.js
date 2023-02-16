@@ -17,6 +17,7 @@ const Admonition = require("./models/Admonition");
 const Recorder = require("./models/Recorder")
 const Answers = require("./models/Answers");
 const Event = require("./models/Event");
+const ReplacementReason = require("./models/ReplacementReason");
 const diacriticSensitiveRegex = require("./utils/diacriticSensitiveRegex");
 
 // Messages
@@ -755,6 +756,17 @@ app.post("/login", async (req, res) => {
         success: true
     })
 
+})
+
+app.post("/replacement", async (req, res) => {
+    const newReplacement = new ReplacementReason(req.body)
+
+    await newReplacement.save();
+
+    return res.status(200).json({
+        data: newReplacement,
+        success: true
+    })
 })
 
 

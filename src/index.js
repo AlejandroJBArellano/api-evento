@@ -1,9 +1,9 @@
 require("dotenv").config()
 
-const express = require("express"),
-morgan = require("morgan"),
-router = require("./app"),
-cors = require("cors")
+const express = require("express")
+const morgan = require("morgan")
+const router = require("./app")
+const cors = require("cors")
 
 // Inicializators
 
