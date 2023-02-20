@@ -42,6 +42,7 @@ app.post("/new-user", async (req, res) => {
         const searchComposite = Object.values(req.body).join(" ")
         const newUser = new User(req.body)
         newUser.searchComposite = searchComposite
+        console.log(newUser)
         await newUser.validate()
         await newUser.save()
         res.json({message: "success", ...newUser._doc})
@@ -772,10 +773,16 @@ app.post("/replacement", async (req, res) => {
 app.get("/attendees", async (req, res) => {
     try {
         const paginationQueries = ["skip", "limit"]
+        const queriesNotToRegExp = ["_id"]
         const query = {}
         Object.entries(req.query).forEach((key) => {
-            if(paginationQueries.includes(key)) return;
             const field = key[0]
+            if(paginationQueries.includes(field)) 
+                return
+            if(queriesNotToRegExp.includes(field)){
+                query[field] = req.query[field]
+                return;
+            }
             const value = diacriticSensitiveRegex(req.query[field]);
             if(value.length > 0){
                 const regexp = new RegExp(value,'i',);
@@ -785,13 +792,20 @@ app.get("/attendees", async (req, res) => {
         })
         console.log('req.query', req.query)
         console.log("query",query)
+
+        const {skip, limit} = req.query
     
-        const users = await User.find(query)
+        const users = await User.find(query, {}, {skip, limit})
+
+        const count = await User.count(query)
+
         res.status(200).json({
             data: users,
-            success: true
+            success: true,
+            count
         })
     } catch (error) {
+        console.log(error)
         res.status(500).json({
             error,
             success:false
