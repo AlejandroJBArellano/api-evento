@@ -7,6 +7,7 @@ const UserSchema = new Schema({
     last_name: String,
     mobile_number: String,
     badge: String,
+    searchComposite: String
 }, {
     timestamps: true,
     versionKey: false,
