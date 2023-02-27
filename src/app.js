@@ -19,6 +19,7 @@ const Answers = require("./models/Answers");
 const Event = require("./models/Event");
 const ReplacementReason = require("./models/ReplacementReason");
 const diacriticSensitiveRegex = require("./utils/diacriticSensitiveRegex");
+const { user } = require("./exportingDatabase/keys");
 
 // Messages
 const message = "Success";
@@ -772,8 +773,10 @@ app.post("/replacement", async (req, res) => {
 
 app.get("/attendees", async (req, res) => {
     try {
+        //TODO: paginationOptions = req.query
+        //TODO: searchParameters = req.query
         const paginationQueries = ["skip", "limit"]
-        const queriesNotToRegExp = ["_id"]
+        const queriesNotToRegExp = ["_id", "qr_code"]
         const query = {}
         Object.entries(req.query).forEach((key) => {
             const field = key[0]
@@ -797,6 +800,8 @@ app.get("/attendees", async (req, res) => {
     
         const users = await User.find(query, {}, {skip, limit})
 
+        //TODO: averiguar si se puede incluir el count en la misma petición de users
+
         const count = await User.count(query)
 
         res.status(200).json({
@@ -813,4 +818,133 @@ app.get("/attendees", async (req, res) => {
     }
 })
 
+//TODO: change to /distinct/:field
+
+app.get("/sidenav", async (req, res) => {
+    try {        
+        const {field} = req.query
+        const distinctValues = await User.distinct(field);
+        // TODO: one just unique query to the database and then sorting them in memory
+        const data = []
+        for (let i = 0; i < distinctValues.length; i++) {
+            const value = distinctValues[i];
+            const count = await User.find({[field]: value}).count()
+            data.push({
+                field: value,
+                count
+            })
+        }
+        res.status(200).json({
+            data,
+            success:true
+        })
+    } catch (error) {
+        res.status(500).json({
+            error,
+            success: false
+        })
+    }
+})
+
+app.get("/influx-time", async (req, res) => {
+    // TODO: dropdown de días
+    // TODO: gráfica: eje x (tiempo) eje y (asistentes query); series: todas las entradas
+    const {start, end} = req.query
+
+    console.log(start, end)
+
+    const usersEntrance = await EntranceControl.aggregate([
+        {
+            $match: {
+                "created": {
+                    "$gte": new Date(start),
+                    "$lt": new Date(end)
+                }
+            },
+        },
+        {
+            $group: {
+                "_id": {
+                    "event_type": "$event_type",
+                    dateTrunc: {
+                        "$dateTrunc": {
+                            date: "$created",
+                            unit: "hour",
+                            timezone: "-0500"
+                        }
+                    },
+                    // "year": {
+                    //     "$year": "$created"
+                    // },
+                    // "dayOfYear": {
+                    //     "$dayOfYear": "$created"
+                    // },
+                    // "dayOfMonth": {
+                    //     "$dayOfMonth": "$created"
+                    // },
+                    // "dayOfWeek": {
+                    //     "$dayOfWeek": "$created"
+                    // },
+                    // "hour": {
+                    //     "$hour": "$created"
+                    // },
+                    // "interval": {
+                    //     "$subtract": [{
+                    //             "$minute": "$created"
+                    //         },
+                    //         {
+                    //             "$mod": [{
+                    //                 "$minute": "$created"
+                    //             }, 60]
+                    //         }
+                    //     ]
+                    // }
+                },
+                "count": { "$sum": 1 }
+            }, 
+        }
+    ])
+
+    const hoursNotSet = usersEntrance.map(entranceControl => entranceControl._id.dateTrunc).sort((a,b) => new Date(a).getTime() - new Date(b).getTime())
+
+    const hoursAlmostASet = new Set()
+
+    hoursNotSet.forEach(hour => {
+        if(!hoursAlmostASet.has(new String(hour))){
+            hoursAlmostASet.add(hour)
+        }
+    })
+
+    console.log(hoursAlmostASet)
+
+    const hours = [...new Set(usersEntrance.map(entranceControl => entranceControl._id.dateTrunc).sort((a,b) => new Date(a) - new Date(b)))]
+
+    const series = [...new Set(usersEntrance.map(entranceControl => entranceControl._id.event_type))]
+
+    const entrances = series.map((serie) => {
+        const objects = usersEntrance.filter((entranceControl) => entranceControl._id.event_type === serie)
+
+        const hours = objects.map(obj => {
+            return {
+                dateTrunc: obj._id.dateTrunc,
+                count: obj.count
+            }
+        }).map(({dateTrunc, count}) => ({
+            dateTrunc, count
+
+        })).sort((a, b) => new Date(a.dateTrunc) - new Date(b.dateTrunc))
+
+        return {
+            event_type: serie,
+            hours
+        }
+    })
+
+    res.json({
+        data: {
+            hours,
+            entrances,
+        }, success: true
+    })
+})
 module.exports = app;
