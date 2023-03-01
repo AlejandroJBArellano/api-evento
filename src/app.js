@@ -20,6 +20,13 @@ const Event = require("./models/Event");
 const ReplacementReason = require("./models/ReplacementReason");
 const diacriticSensitiveRegex = require("./utils/diacriticSensitiveRegex");
 const { user } = require("./exportingDatabase/keys");
+const XLSX = require("xlsx");
+const multer  = require('multer')
+const storage = multer.memoryStorage()
+const upload = multer({ storage: storage })
+const fs = require("fs");
+const { parse } = require("csv-parse");
+const { Readable } = require("stream");
 
 // Messages
 const message = "Success";
@@ -946,5 +953,92 @@ app.get("/influx-time", async (req, res) => {
             entrances,
         }, success: true
     })
+})
+
+
+app.post("/validate-import-file", upload.single("attendees"), async (req, res) => {
+    try {        
+        console.log(req.file)
+        // if(req.file.originalname.endsWith(".csv")){
+        //     const data =[]
+        //     const buffer = new Buffer(req.file.buffer, "base64")
+        //     const readable = new Readable()
+        //     readable._read = () => {}
+        //     readable.push(buffer)
+        //     readable.push(null)
+        //     readable.pipe(
+        //         parse({ delimiter: ",", from_line: 2 })
+        //     )
+
+        //         fs.createReadStream(req.file.buffer, "utf-8").pipe(parse({ delimiter: ",", from_line: 2 })).on("data", function (row) {
+        //             data.push(row)
+        //       }).on("end", function () {
+        //         console.log("finished");
+        //       })
+        //       .on("error", function (error) {
+        //         console.log(error.message);
+        //       });
+        //     return res.json({
+        //         data
+        //     })
+        // }
+        if(!req.file.mimetype === "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"){
+            res.json({
+                data: {
+                    errorCode
+                }
+            })
+        }
+        const workbook = XLSX.read(req.file.buffer)
+        const jsa = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]], {header: 1})
+        const events = await Event.find()
+        if(jsa[0].length === 0){
+            return res.status(500).json({
+                data: {
+                    errorCode: "NO_HEADERS_IN_IMPORT_FILE"
+                }
+            })
+        }
+        res.json({
+            // file: req.file
+            data: {
+                fields: jsa[0],
+                users: jsa,
+                event: events[0]
+            },
+            // success: true
+            // workbook: workbook.Strings.map(el => el.t)
+            // workbook
+        })
+    } catch (error) {
+        console.log(error)
+        res.status(500).json({
+            error, success: false
+        })
+    }
+})
+
+app.post("/insert-users", async(req,res) => {
+    try {
+        const {camposToColumnas, attendeesRows} = req.body;
+        const finalAttendees = attendeesRows.slice(1,-1).map(row => {
+            let finalValue = {}
+            Object.keys(camposToColumnas).forEach(key => {
+                const value = row[camposToColumnas[key]]
+                finalValue[key] = value
+            })
+            return finalValue
+        })
+        await User.insertMany(finalAttendees)
+        res.json({
+            data: {
+                finalAttendees
+            }, success: true
+        })
+    } catch (error) {
+        res.status(500).json({
+            error, success: true
+        })
+    }
 })
 module.exports = app;
