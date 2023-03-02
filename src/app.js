@@ -782,17 +782,18 @@ app.get("/attendees", async (req, res) => {
     try {
         //TODO: paginationOptions = req.query
         //TODO: searchParameters = req.query
-        const paginationQueries = ["skip", "limit"]
+        const paginationQueries = ["skip", "limit", "searchComposite", "_id", "createdAt", "updatedAt"]
         const queriesNotToRegExp = ["_id", "qr_code"]
         const query = {}
+
         Object.entries(req.query).forEach((key) => {
             const field = key[0]
-            if(paginationQueries.includes(field)) 
-                return
             if(queriesNotToRegExp.includes(field)){
                 query[field] = req.query[field]
                 return;
             }
+            if(paginationQueries.includes(field)) 
+                return
             const value = diacriticSensitiveRegex(req.query[field]);
             if(value.length > 0){
                 const regexp = new RegExp(value,'i',);
@@ -803,7 +804,25 @@ app.get("/attendees", async (req, res) => {
         console.log('req.query', req.query)
         console.log("query",query)
 
-        const {skip, limit} = req.query
+        const {skip, limit, searchComposite} = req.query
+
+        if(searchComposite && searchComposite.length >= 0){
+            const keysUser = Object.entries(User.schema.paths).map(schemastring => schemastring[1].path)
+            const [event] = await Event.find();
+            console.log("event ",event.tableColumnNames)
+            const orQuery = Object.keys(req.query)
+                .filter((key) => !(paginationQueries.includes(key)))
+                .map((key) => ( { [key]: new RegExp(searchComposite, "i") } ))
+            console.log("orQuery for searchComposite ",orQuery)
+            const users = await User.find({
+                $or: orQuery
+            }).skip(skip).limit(limit)
+            return res.json({
+                data: users,
+                searchComposite,
+                success: true,
+            })
+        }
     
         const users = await User.find(query, {}, {skip, limit})
 
