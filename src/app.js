@@ -829,13 +829,20 @@ app.get("/attendees", async (req, res) => {
 
         if(searchComposite?.length){
             const event = await Event.findOne();
+
+            const valueDiacritic = diacriticSensitiveRegex(searchComposite, "i")
             const orQuery = (event._doc.tableColumnNames).map(e => e.field)
                 .filter((key) => !(paginationQueries.includes(key)))
-                .map((key) => ( { [key]: new RegExp(searchComposite, "i") } ))
-            console.log("orQuery for searchComposite ",orQuery)
-            const users = await User.find({
+                .map((key) => ( { [key]: new RegExp(valueDiacritic, "i") } ))
+            console.log("orQuery for searchComposite ")
+            console.table(orQuery)
+
+            const queryMongo = {
                 $or: orQuery
-            }).skip(skip).limit(limit)
+            }
+
+            const users = await User.find(queryMongo).skip(skip).limit(limit)
+            const count = await User.count(queryMongo)
 
             const users_ids = users?.map(user => user?._doc?._id.toString())
             const tag_ids = await UserTagId.find({
@@ -844,8 +851,7 @@ app.get("/attendees", async (req, res) => {
                 }
             }, "tag_id user_id createdAt")
 
-            console.log("tag ids searchComposite", tag_ids)
-            console.table(tag_ids)
+            // console.log("tag ids searchComposite", tag_ids)
 
             const usersWithTagId = users.map(user => {
                 const userTagIds = tag_ids.filter(userTagId => {
@@ -858,9 +864,7 @@ app.get("/attendees", async (req, res) => {
                 }
             })
 
-            const count = await User.count({
-                $or: orQuery
-            })
+            
 
             return res.json({
                 data: usersWithTagId,
