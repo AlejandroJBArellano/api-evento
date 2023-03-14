@@ -1,8 +1,11 @@
-const { Schema, model } = require("mongoose");
+const { Schema, model, Types } = require("mongoose");
 const { UserSchema } = require("./User");
 
 const UserTagIdSchema = new Schema({
-    user_id:String,
+    user_id:{
+        type: String,
+        ref: "User"
+    },
     tag_id: {
         type: String,
         required: true,

@@ -160,7 +160,11 @@ app.post("/tag_id-user", async (req, res) => {
                         newUserTagId.tag_id=req.body.tag_id
                         console.log("newUserTagId",newUserTagId)
                         await newUserTagId.save()
-                        res.json(newUserTagId)
+                        const tag_ids = await UserTagId.find({user_id: respuesta._id})
+
+                        res.json({...newUserTagId,
+                            countTagId: tag_ids.length
+                        })
                     }catch(err){
                         console.log(err)
                         res.status(500).json({error:err});
@@ -209,10 +213,10 @@ app.get("/tag_id-user", async (req, res) => {
         const user = await UserTagId.findOne({
             tag_id: req.query.tag_id
         })
-        if(!user){
-            res.json({})
-            return;
-        }
+        // if(!user){
+        //     res.json({})
+        //     return;
+        // }
         res.json(user)
         return;
     } catch (error) {
@@ -768,21 +772,33 @@ app.post("/login", async (req, res) => {
 })
 
 app.post("/replacement", async (req, res) => {
-    const newReplacement = new ReplacementReason(req.body)
-
-    await newReplacement.save();
-
-    return res.status(200).json({
-        data: newReplacement,
-        success: true
-    })
+    try {
+        
+        const newReplacement = new ReplacementReason({
+            comment: req.body.comment,
+            reason: req.body.reason,
+        })
+    
+        await newReplacement.save();
+    
+        return res.status(200).json({
+            data: newReplacement,
+            success: true
+        })
+    } catch (error) {
+        res.status(500).json({
+            error,
+            success:false
+        })
+    }
 })
 
 app.get("/attendees", async (req, res) => {
     try {
+        console.log('req.query', req.query)
         //TODO: paginationOptions = req.query
         //TODO: searchParameters = req.query
-        const paginationQueries = ["skip", "limit", "searchComposite", "_id", "createdAt", "updatedAt"]
+        const paginationQueries = ["skip", "limit", "searchComposite", "_id", "createdAt", "updatedAt", "countTagId"]
         const queriesNotToRegExp = ["_id", "qr_code"]
         const query = {}
 
@@ -794,6 +810,12 @@ app.get("/attendees", async (req, res) => {
             }
             if(paginationQueries.includes(field)) 
                 return
+            if(Array.isArray(req.query[field])){
+                query[field] = {
+                    $in: req.query[field]
+                }
+                return;
+            }
             const value = diacriticSensitiveRegex(req.query[field]);
             if(value.length > 0){
                 const regexp = new RegExp(value,'i',);
@@ -801,37 +823,88 @@ app.get("/attendees", async (req, res) => {
                 query[field] = regexp
             }
         })
-        console.log('req.query', req.query)
         console.log("query",query)
 
         const {skip, limit, searchComposite} = req.query
 
-        if(searchComposite && searchComposite.length >= 0){
-            const keysUser = Object.entries(User.schema.paths).map(schemastring => schemastring[1].path)
-            const [event] = await Event.find();
-            console.log("event ",event.tableColumnNames)
-            const orQuery = Object.keys(req.query)
+        if(searchComposite?.length){
+            const event = await Event.findOne();
+            const orQuery = (event._doc.tableColumnNames).map(e => e.field)
                 .filter((key) => !(paginationQueries.includes(key)))
                 .map((key) => ( { [key]: new RegExp(searchComposite, "i") } ))
             console.log("orQuery for searchComposite ",orQuery)
             const users = await User.find({
                 $or: orQuery
             }).skip(skip).limit(limit)
+
+            const users_ids = users?.map(user => user?._doc?._id.toString())
+            const tag_ids = await UserTagId.find({
+                "user_id": {
+                    $in: users_ids
+                }
+            }, "tag_id user_id createdAt")
+
+            console.log("tag ids searchComposite", tag_ids)
+            console.table(tag_ids)
+
+            const usersWithTagId = users.map(user => {
+                const userTagIds = tag_ids.filter(userTagId => {
+                    return userTagId.user_id === user._id.toString()
+                })
+                return {
+                    ...user._doc,
+                    countTagId: userTagIds.length,
+                    lastTagCreatedAt: new Date( userTagIds.reduce((acc, curr) => (new Date(acc) > new Date(curr.createdAt) ? new Date(acc) : new Date(curr.createdAt)), undefined))
+                }
+            })
+
+            const count = await User.count({
+                $or: orQuery
+            })
+
             return res.json({
-                data: users,
+                data: usersWithTagId,
                 searchComposite,
                 success: true,
+                count
             })
         }
     
         const users = await User.find(query, {}, {skip, limit})
 
-        //TODO: averiguar si se puede incluir el count en la misma petición de users
+        const users_ids = users?.map(user => user?._doc?._id.toString())
+
+        const tag_ids = await UserTagId.find({
+            "user_id": {
+                $in: users_ids
+            }
+        }, "tag_id user_id createdAt")
+
+        const usersWithTagId = users.map(user => {
+            const userTagIds = tag_ids.filter(userTagId => {
+                return userTagId.user_id === user._id.toString()
+            })
+            return {
+                ...user._doc,
+                countTagId: userTagIds.length,
+                lastTagCreatedAt: new Date( userTagIds.reduce((acc, curr) => (new Date(acc) > new Date(curr.createdAt) ? new Date(acc) : new Date(curr.createdAt)), undefined))
+            }
+        })
+
+        const usersFinal = usersWithTagId.filter(attendee => {
+            if(Array.isArray(req.query.countTagId)){
+                return req.query.countTagId.includes(attendee.countTagId)
+            } else {
+                if(req.query.countTagId >= 2){
+                    return attendee.countTagId >= 2
+                }
+                return req.query.countTagId == attendee.countTagId
+            }
+        })
 
         const count = await User.count(query)
-
         res.status(200).json({
-            data: users,
+            data: req.query.countTagId ? usersFinal: usersWithTagId,
             success: true,
             count
         })
@@ -1057,6 +1130,20 @@ app.post("/insert-users", async(req,res) => {
     } catch (error) {
         res.status(500).json({
             error, success: true
+        })
+    }
+})
+
+app.get("/attendees-table", async (req, res) => {
+    try {
+        const attendees = await User.find(req.query)
+        res.status(200).json({
+            data: attendees,
+            success: false
+        })
+    } catch (error) {
+        res.status(500).json({
+            error, success: false
         })
     }
 })

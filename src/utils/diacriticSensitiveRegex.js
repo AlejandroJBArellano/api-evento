@@ -9,6 +9,6 @@ const diacriticSensitiveRegex = (string = "") => string.replace(/a/g, '[a,á,à,
     .replace(/e/g, '[e,é,ë,è]')
     .replace(/i/g, '[i,í,ï,ì]')
     .replace(/o/g, '[o,ó,ö,ò]')
-    .replace(/u/g, '[u,ü,ú,ù]');
+    .replace(/u/g, '[u,ü,ú,ù,U,Ù,Ú,Û,Ü]');
 
 module.exports = diacriticSensitiveRegex
