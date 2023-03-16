@@ -139,73 +139,102 @@ app.put('/user/:id', async (req, res) => {
 
 app.post("/tag_id-user", async (req, res) => {
     try {
-        User.findById(req.body.id)
-            .then(async (respuesta) => {
-                if(respuesta){
-                    var target = {};
-                    //TODO: not user found
-                    for (var i in respuesta._doc) {
-                        if (["_id"].indexOf(i) >= 0) continue;
-                        if (!Object.prototype.hasOwnProperty.call(respuesta._doc, i)) continue;
-                        target[i] = respuesta._doc[i];
-                    }                    
-                    
-                    const newUserTagId = new UserTagId({
-                        tag_id: req.body.tag_id,
-                        user_id:respuesta._id,
-                        ...target
-                    })
+        const {id: user_id, ...body} = req.body
 
-                    try{
-                        newUserTagId.tag_id=req.body.tag_id
-                        console.log("newUserTagId",newUserTagId)
-                        await newUserTagId.save()
-                        const tag_ids = await UserTagId.find({user_id: respuesta._id})
+        console.log("body", req.body)
+        const attendee = await User.findById(user_id);
 
-                        res.json({...newUserTagId,
-                            countTagId: tag_ids.length
-                        })
-                    }catch(err){
-                        console.log(err)
-                        res.status(500).json({error:err});
-                    }
-                } else {
-                    const respuesta = {
-                        tag_id: req.body.tag_id,
-                        registered_by_user_id: 0,
-                        user_id: "_desconocido",
-                        first_name: "_desconocido",
-                        last_name: "_desconocido",
-                        email: "",
-                        mobile_number: "",
-                        badge: "",
-                        user_role: {
-                            role: "_desconocido"
-                        },
-                        organization_role: {
-                            region: "_desconocido",
-                            zona: "_desconocido",
-                            distrito: "_desconocido",
-                            tienda: "_desconocido"
-                        }
-                    }
-                    try {
-                        const newUserTagId = new UserTagId(respuesta);
-                        await newUserTagId.save()
-                        res.json(newUserTagId)
-                        return;
-                    } catch (error) {
-                        console.log(err)
-                        res.status(500).json(error)
-                        return;
-                    }
-                }
+        if(!attendee){
+            res.status(400).json({
+                error: {
+                    message: "Attendee not found",
+                },
+                success: false
             })
+        }
+
+        const attendeeWithoutId = Object.keys(attendee._doc).reduce((obj, k)=>{
+            if (k !== '_id') obj[k] = attendee[k];
+            return obj;
+        }, {})
+
+        const newBadgeBonding = new UserTagId({
+            ...body,
+            ...attendeeWithoutId,
+            user_id,
+        })
+        
+        console.log("newBadgeBonding", newBadgeBonding)
+        await newBadgeBonding.save()
+        const tag_ids = await UserTagId.find({user_id})
+        res.json({
+            ...newBadgeBonding._doc,
+            countTagId: tag_ids.length
+        })    
+    
     } catch (error) {
-        console.log(err)
-        res.status(500).json(error)
-        return;
+        console.log(error)
+        res.status(500).json({
+            error,
+            success: false
+        })
     }
+    // try {
+    //     User.findById(req.body.id)
+    //         .then(async (respuesta) => {
+    //             if(respuesta){
+    //                 var target = {};
+    //                 //TODO: not user found
+    //                 for (var i in respuesta._doc) {
+    //                     if (["_id"].indexOf(i) >= 0) continue;
+    //                     if (!Object.prototype.hasOwnProperty.call(respuesta._doc, i)) continue;
+    //                     target[i] = respuesta._doc[i];
+    //                 }                    
+                    
+    //                 const newUserTagId = new UserTagId({
+    //                     tag_id: req.body.tag_id,
+    //                     user_id:respuesta._id,
+    //                     ...target
+    //                 })
+
+    //                 try{
+    //                     newUserTagId.tag_id=req.body.tag_id
+    //                     console.log("newUserTagId",newUserTagId)
+    //                     await newUserTagId.save()
+    //                     const tag_ids = await UserTagId.find({user_id: respuesta._id})
+
+    //                     res.json({...newUserTagId._doc,
+    //                         countTagId: tag_ids.length
+    //                     })
+    //                 }catch(err){
+    //                     console.log(err)
+    //                     res.status(500).json({error:err});
+    //                 }
+    //             } else {
+    //                 const respuesta = {
+    //                     tag_id: req.body.tag_id,
+    //                     user_id: "_desconocido",
+    //                     first_name: "_desconocido",
+    //                     last_name: "_desconocido",
+    //                     badge: ""
+    //                 }
+    //                 try {
+    //                     const newUserTagId = new UserTagId(respuesta);
+    //                     await newUserTagId.save()
+    //                     res.json(newUserTagId)
+    //                     return;
+    //                 } catch (error) {
+    //                     console.log(err)
+    //                     res.status(500).json(error)
+    //                     return;
+    //                 }
+    //             }
+    //         })
+    // } catch (error) {
+    //     console.log(err)
+    //     res.status(500).json(error)
+    //     return;
+    // }
 })
 
 app.get("/tag_id-user", async (req, res) => {
@@ -1116,8 +1145,9 @@ app.post("/validate-import-file", upload.single("attendees"), async (req, res) =
 
 app.post("/insert-users", async(req,res) => {
     try {
+        console.log("req.body", req.body)
         const {camposToColumnas, attendeesRows} = req.body;
-        const finalAttendees = attendeesRows.slice(1,-1).map(row => {
+        const finalAttendees = attendeesRows.slice(1,attendeesRows.length).map(row => {
             let finalValue = {}
             Object.keys(camposToColumnas).forEach(key => {
                 const value = row[camposToColumnas[key]]
@@ -1125,6 +1155,8 @@ app.post("/insert-users", async(req,res) => {
             })
             return finalValue
         })
+        console.log("finalAttendees")
+        console.table(finalAttendees)
         await User.insertMany(finalAttendees)
         res.json({
             data: {
