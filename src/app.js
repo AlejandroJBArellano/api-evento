@@ -1015,6 +1015,21 @@ app.get("/status-count", async(req, res) => {
     }
 })
 
+app.get("/total-attendees", async (req, res) => {
+    try {
+        const totalAttendees = await User.count();
+        res.json({
+            data: totalAttendees,
+            success:true
+        })
+    } catch (error) {
+        res.status(500).json({
+            error,
+            success: false
+        })
+    }
+})
+
 app.get("/influx-time", async (req, res) => {
     // TODO: dropdown de días
     // TODO: gráfica: eje x (tiempo) eje y (asistentes query); series: todas las entradas
