@@ -998,7 +998,6 @@ app.get("/status-count", async(req, res) => {
         ])
         const finalCount = {}
         for (const iterator of attendees) {
-            console.log("iterator", iterator)
             if(iterator._id >= 2) finalCount["REPOSITION"] = finalCount["REPOSITION"] ? finalCount["REPOSITION"] + iterator.count : iterator.count
             else finalCount["COMPLETED"] = finalCount["COMPLETED"] ? finalCount["COMPLETED"] + iterator.count : iterator.count
         }
