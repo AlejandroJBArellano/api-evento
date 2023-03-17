@@ -980,6 +980,8 @@ app.get("/sidenav", async (req, res) => {
 
 app.get("/status-count", async(req, res) => {
     try {
+        const attendeesLength  = await User.count()
+        const attendeesWithTag = await UserTagId.count()
         const attendees = await UserTagId.aggregate([
             {
                 $group: {
@@ -1000,6 +1002,7 @@ app.get("/status-count", async(req, res) => {
             if(iterator._id >= 2) finalCount["REPOSITION"] = finalCount["REPOSITION"] ? finalCount["REPOSITION"] + iterator.count : iterator.count
             else finalCount["COMPLETED"] = finalCount["COMPLETED"] ? finalCount["COMPLETED"] + iterator.count : iterator.count
         }
+        finalCount["PENDING"] = attendeesLength - attendeesWithTag
         res.status(200).json({
             data: finalCount,
             success: true
