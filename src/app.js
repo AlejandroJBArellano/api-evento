@@ -978,6 +978,40 @@ app.get("/sidenav", async (req, res) => {
     }
 })
 
+app.get("/status-count", async(req, res) => {
+    try {
+        const attendees = await UserTagId.aggregate([
+            {
+                $group: {
+                    "_id": "$user_id",
+                    "count": { "$sum": 1 }
+                }
+            },
+            {
+                $group: {
+                    "_id": "$count",
+                    "count": { "$sum": 1 }
+                }
+            }
+        ])
+        const finalCount = {}
+        for (const iterator of attendees) {
+            console.log("iterator", iterator)
+            if(iterator._id >= 2) finalCount["REPOSITION"] = finalCount["REPOSITION"] ? finalCount["REPOSITION"] + iterator.count : iterator.count
+            else finalCount["COMPLETED"] = finalCount["COMPLETED"] ? finalCount["COMPLETED"] + iterator.count : iterator.count
+        }
+        res.status(200).json({
+            data: finalCount,
+            success: true
+        })
+    } catch (error) {
+        res.status(500).json({
+            error,
+            success: false
+        })
+    }
+})
+
 app.get("/influx-time", async (req, res) => {
     // TODO: dropdown de días
     // TODO: gráfica: eje x (tiempo) eje y (asistentes query); series: todas las entradas
