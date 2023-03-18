@@ -893,8 +893,6 @@ app.get("/attendees", async (req, res) => {
                 }
             })
 
-            
-
             return res.json({
                 data: usersWithTagId,
                 searchComposite,
@@ -1007,6 +1005,117 @@ app.get("/status-count", async(req, res) => {
             success: true
         })
     } catch (error) {
+        res.status(500).json({
+            error,
+            success: false
+        })
+    }
+})
+
+app.get("/attendee-by-status", async(req, res) => {
+    try {        
+        const {countTagId, skip, limit} = req.query
+        console.log("countTagId", countTagId)
+        const isArrayOfStatuses = Array.isArray(countTagId)
+        const data = {}
+        const statuses = {
+            1: { $eq: 1 },
+            2: { $gte: 2 }
+        }
+        const STATUSES = {
+            "0": "PENDING",
+           "1": "COMPLETED",
+            "2": "REPOSITION"
+        }
+        if((isArrayOfStatuses && countTagId.includes("0")) || countTagId == 0){
+            console.log("here")
+            const attendees = await UserTagId.find({}, "user_id")
+    
+            const attendeesIdsWithTag = [...new Set(attendees.map(({user_id}) => user_id))]
+    
+            const attendeesWithoutTag = await User.find({
+                "_id": {
+                    $not: {
+                        $in:  attendeesIdsWithTag
+                    }
+                }
+            })
+            .skip(skip).limit(limit)
+            const length = await User.count({
+                "_id": {
+                    $not: {
+                        $in:  attendeesIdsWithTag
+                    }
+                }
+            })
+            data[STATUSES[0]] = {
+                attendees: attendeesWithoutTag,
+                count: length
+            }
+        }
+        if (isArrayOfStatuses && (countTagId.includes("1") || countTagId.includes("2"))) {
+            for (const iterator of countTagId) {
+                if(!parseInt(iterator)) continue;
+                const attendeesByStatus = await UserTagId.aggregate([
+                    {
+                        $group: {
+                            "_id": "$user_id",
+                            "count": { "$sum": 1 }
+                        }
+                    },
+                    {
+                        $match: {
+                            "count": statuses[iterator]
+                        }
+                    },
+                    {$skip: parseInt(skip)},
+                    {$limit: parseInt(limit)}
+                ])
+                const attendeesWithTag = await User.find({
+                    "_id": {
+                        $in :attendeesByStatus.map(({_id}) => _id)
+                    }
+                })
+                data[STATUSES[iterator]]= {
+                    attendees: attendeesWithTag,
+                    count: attendeesWithTag.length
+                }
+            }
+        } else {
+            const attendeesByStatus = await UserTagId.aggregate([
+                {
+                    $group: {
+                        "_id": "$user_id",
+                        "count": { "$sum": 1 }
+                    }
+                },
+                {
+                    $match: {
+                        "count": statuses[countTagId]
+                    }
+                },
+                ])
+                const attendeesWithTag = await User.find({
+                    "_id": {
+                        $in :attendeesByStatus.map(({_id}) => _id)
+                    }
+                }).skip(skip).limit(limit);
+                const count = await User.count({
+                    "_id": {
+                        $in :attendeesByStatus.map(({_id}) => _id)
+                    }
+                })
+            data[STATUSES[countTagId]] = {
+                attendees: attendeesWithTag,
+                count
+            }
+        }
+        res.json({
+            data,
+            success:true
+        })
+    } catch (error) {
+        console.log(error)
         res.status(500).json({
             error,
             success: false

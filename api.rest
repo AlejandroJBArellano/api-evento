@@ -218,3 +218,5 @@ GET http://localhost:3300/influx-time?start=2022-10-28T05:00:00.000Z&end=2022-10
 GET http://localhost:3300/attendees?skip=0&limit=50  HTTP/1.1
 ###
 GET http://localhost:3300/status-count  HTTP/1.1
+###
+GET http://localhost:3300/attendee-by-status?countTagId=1&limit=50&skip=0  HTTP/1.1
