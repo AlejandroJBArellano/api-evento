@@ -1492,122 +1492,130 @@ app.get("/attendees-table", async (req, res) => {
 //     }
 // }
 app.get("/another-endpoint", async (req, res) => {
-	const { countTagId, limit, skip } = req.query;
-	console.log(countTagId);
-	const matchByCountTagId = Array.isArray(countTagId)
-		? {
-				$in: countTagId.map((c) => parseInt(c)),
-		  }
-		: parseInt(countTagId);
-	console.log("matchByCountTagId", {
-		$match: {
-			countTagId: matchByCountTagId,
-		},
-	});
-	const result = await User.aggregate([
-		{
-			$addFields: {
-				userId: { $toString: "$_id" },
-			},
-		},
-		{
-			$lookup: {
-				from: "usertagids",
-				localField: "userId",
-				foreignField: "user_id",
-				as: "tags",
-			},
-		},
-		{
-			$project: {
-				doc: "$$ROOT",
-				countTagId: { $size: "$tags.tag_id" },
-				_id: 0,
-			},
-		},
-		{
+	try {
+		const { countTagId, limit, skip } = req.query;
+		console.log(countTagId);
+		const matchByCountTagId = Array.isArray(countTagId)
+			? {
+					$in: countTagId.map((c) => parseInt(c)),
+			  }
+			: parseInt(countTagId);
+		console.log("matchByCountTagId", {
 			$match: {
 				countTagId: matchByCountTagId,
 			},
-		},
-		{ $skip: parseInt(skip) },
-		{ $limit: parseInt(limit) },
-		{
-			$group: {
-				_id: {
-					$cond: [
-						{ $eq: ["$countTagId", 0] },
-						"PENDING",
-						{
-							$cond: [
-								{ $eq: ["$countTagId", 1] },
-								"COMPLETED",
-								"REPOSITION",
-							],
-						},
-					],
+		});
+		const result = await User.aggregate([
+			{
+				$addFields: {
+					userId: { $toString: "$_id" },
 				},
-				users: { $push: "$$ROOT" },
-				count: { $sum: 1 },
 			},
-		},
-		{
-			$group: {
-				_id: null,
-				data: {
-					$push: {
-						k: "$_id",
-						v: {
-							attendees: "$users",
-							count: "$count",
+			{
+				$lookup: {
+					from: "usertagids",
+					localField: "userId",
+					foreignField: "user_id",
+					as: "tags",
+				},
+			},
+			{
+				$project: {
+					doc: "$$ROOT",
+					countTagId: { $size: "$tags.tag_id" },
+					_id: 0,
+				},
+			},
+			{
+				$match: {
+					countTagId: matchByCountTagId,
+				},
+			},
+			{ $skip: parseInt(skip) },
+			{ $limit: parseInt(limit) },
+			{
+				$group: {
+					_id: {
+						$cond: [
+							{ $eq: ["$countTagId", 0] },
+							"PENDING",
+							{
+								$cond: [
+									{ $eq: ["$countTagId", 1] },
+									"COMPLETED",
+									"REPOSITION",
+								],
+							},
+						],
+					},
+					users: { $push: "$$ROOT" },
+					count: { $sum: 1 },
+				},
+			},
+			{
+				$group: {
+					_id: null,
+					data: {
+						$push: {
+							k: "$_id",
+							v: {
+								attendees: "$users",
+								count: "$count",
+							},
 						},
 					},
 				},
 			},
-		},
-		{
-			$replaceRoot: {
-				newRoot: { $arrayToObject: "$data" },
+			{
+				$replaceRoot: {
+					newRoot: { $arrayToObject: "$data" },
+				},
 			},
-		},
-	]);
-	const totalCount = await User.aggregate([
-		{
-			$addFields: {
-				userId: { $toString: "$_id" },
+		]);
+		const totalCount = await User.aggregate([
+			{
+				$addFields: {
+					userId: { $toString: "$_id" },
+				},
 			},
-		},
-		{
-			$lookup: {
-				from: "usertagids",
-				localField: "userId",
-				foreignField: "user_id",
-				as: "tags",
+			{
+				$lookup: {
+					from: "usertagids",
+					localField: "userId",
+					foreignField: "user_id",
+					as: "tags",
+				},
 			},
-		},
-		{
-			$project: {
-				doc: "$$ROOT",
-				countTagId: { $size: "$tags.tag_id" },
-				_id: 0,
+			{
+				$project: {
+					doc: "$$ROOT",
+					countTagId: { $size: "$tags.tag_id" },
+					_id: 0,
+				},
 			},
-		},
-		{
-			$match: {
-				countTagId: matchByCountTagId,
+			{
+				$match: {
+					countTagId: matchByCountTagId,
+				},
 			},
-		},
-		{
-			$group: {
-				_id: null,
-				count: { $sum: 1 },
+			{
+				$group: {
+					_id: null,
+					count: { $sum: 1 },
+				},
 			},
-		},
-	]);
+		]);
 
-	const total = totalCount[0].count;
-	res.status(200).json({
-		data: { total, ...result[0] },
-	});
+		const total = totalCount[0].count;
+		res.status(200).json({
+			data: { total, attendees: result[0] },
+			success: true,
+		});
+	} catch (error) {
+		res.status(500).json({
+			error,
+			success: false,
+		});
+	}
 });
 module.exports = app;
