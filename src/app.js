@@ -1236,6 +1236,33 @@ app.get("/total-attendees", async (req, res) => {
 	}
 });
 
+// "year": {
+//     "$year": "$created"
+// },
+// "dayOfYear": {
+//     "$dayOfYear": "$created"
+// },
+// "dayOfMonth": {
+//     "$dayOfMonth": "$created"
+// },
+// "dayOfWeek": {
+//     "$dayOfWeek": "$created"
+// },
+// "hour": {
+//     "$hour": "$created"
+// },
+// "interval": {
+//     "$subtract": [{
+//             "$minute": "$created"
+//         },
+//         {
+//             "$mod": [{
+//                 "$minute": "$created"
+//             }, 60]
+//         }
+//     ]
+// }
+
 app.get("/influx-time", async (req, res) => {
 	// TODO: dropdown de días
 	// TODO: gráfica: eje x (tiempo) eje y (asistentes query); series: todas las entradas
@@ -1244,6 +1271,20 @@ app.get("/influx-time", async (req, res) => {
 	console.log(start, end);
 
 	const usersEntrance = await EntranceControl.aggregate([
+		{
+			$group: {
+				_id: {
+					tag_id: "$tag_id",
+					created: "$created",
+					event_type: "$event_type",
+				},
+			},
+		},
+		{
+			$replaceRoot: {
+				newRoot: "$_id",
+			},
+		},
 		{
 			$match: {
 				created: {
@@ -1263,32 +1304,6 @@ app.get("/influx-time", async (req, res) => {
 							timezone: "-0500",
 						},
 					},
-					// "year": {
-					//     "$year": "$created"
-					// },
-					// "dayOfYear": {
-					//     "$dayOfYear": "$created"
-					// },
-					// "dayOfMonth": {
-					//     "$dayOfMonth": "$created"
-					// },
-					// "dayOfWeek": {
-					//     "$dayOfWeek": "$created"
-					// },
-					// "hour": {
-					//     "$hour": "$created"
-					// },
-					// "interval": {
-					//     "$subtract": [{
-					//             "$minute": "$created"
-					//         },
-					//         {
-					//             "$mod": [{
-					//                 "$minute": "$created"
-					//             }, 60]
-					//         }
-					//     ]
-					// }
 				},
 				count: { $sum: 1 },
 			},
@@ -1306,8 +1321,6 @@ app.get("/influx-time", async (req, res) => {
 			hoursAlmostASet.add(hour);
 		}
 	});
-
-	console.log(hoursAlmostASet);
 
 	const hours = [
 		...new Set(
@@ -1351,6 +1364,7 @@ app.get("/influx-time", async (req, res) => {
 
 	res.json({
 		data: {
+			hola: usersEntrance[0],
 			hours,
 			entrances,
 		},
@@ -1499,9 +1513,36 @@ app.get("/another-endpoint", async (req, res) => {
 		console.log(countTagId);
 		const matchByCountTagId = Array.isArray(countTagId)
 			? {
-					$in: countTagId.map((c) => parseInt(c)),
+					$match: {
+						$or: [
+							countTagId.includes("2")
+								? { countTagId: { $gte: 2 } }
+								: {},
+							countTagId.includes("1") || countTagId.includes("0")
+								? {
+										countTagId: {
+											$in: [
+												...countTagId
+													.map((e) => parseInt(e))
+													.filter((e) => e !== 2),
+											],
+										},
+								  }
+								: {},
+						],
+					},
 			  }
-			: parseInt(countTagId);
+			: parseInt(countTagId) >= 2
+			? {
+					$match: {
+						countTagId: { $gte: parseInt(countTagId) },
+					},
+			  }
+			: {
+					$match: {
+						countTagId: parseInt(countTagId),
+					},
+			  };
 		console.log("matchByCountTagId", {
 			$match: {
 				countTagId: matchByCountTagId,
@@ -1528,11 +1569,7 @@ app.get("/another-endpoint", async (req, res) => {
 					_id: 0,
 				},
 			},
-			{
-				$match: {
-					countTagId: matchByCountTagId,
-				},
-			},
+			matchByCountTagId,
 			{ $skip: parseInt(skip) },
 			{ $limit: parseInt(limit) },
 			{
@@ -1595,11 +1632,7 @@ app.get("/another-endpoint", async (req, res) => {
 					_id: 0,
 				},
 			},
-			{
-				$match: {
-					countTagId: matchByCountTagId,
-				},
-			},
+			matchByCountTagId,
 			{
 				$group: {
 					_id: null,
@@ -1612,8 +1645,10 @@ app.get("/another-endpoint", async (req, res) => {
 		res.status(200).json({
 			data: { total, attendees: result[0] },
 			success: true,
+			matchByCountTagId,
 		});
 	} catch (error) {
+		console.log("error", error);
 		res.status(500).json({
 			error,
 			success: false,
