@@ -707,119 +707,113 @@ app.get("/insert-data-bubble", async (req, res) => {
 	let resultsTicketOrders = [];
 	let dataTicketOrder = null;
 
-	const config = {
-		headers: {
-			Authorization: `Bearer ${process.env.BUBBLE_API_KEY}`,
-		},
-		params: {
-			limit: 100,
-			cursor: 0, // user.cursor +1 || 0
-		},
-		timeout: 2000,
-	};
-	const { data: dataTicketTypes } = await axios.get(
-		`${process.env.BUBBLE_API}/TicketType`,
-		config
-	);
-	ticketTypes = dataTicketTypes.response.results;
-	console.log(ticketTypes);
-	const { data: dataMembershipTypes } = await axios.get(
-		`${process.env.BUBBLE_API}/MembershipType`,
-		config
-	);
-	membershipsTypes = dataMembershipTypes.response.results;
-	console.log(membershipsTypes);
-	do {
-		console.log("while", config.params.cursor, remaining);
-		dataTicketOrder = await axios.get(
-			`${process.env.BUBBLE_API}/TicketOrder`,
-			config
-		);
-		remaining = dataTicketOrder.data.response.remaining;
-		//Filter non test tickets, i.e price different of $1 USD
-		let nonTestTickets = dataTicketOrder.data.response.results.filter(
-			(ticketOrder) =>
-				ticketOrder.ticket_type_price !== 1 &&
-				ticketOrder.status === "PAYED_WITH_STRIPE"
-		);
-		console.log("non test tickets in interation: ", nonTestTickets.length);
-		resultsTicketOrders.push(...nonTestTickets);
-		config.params.cursor += config.params.limit;
-	} while (remaining > 0);
-	config.params.cursor = 0;
-	const response = [];
-	console.log("resultsTicketOrders.length", resultsTicketOrders.length);
-	console.log("Es momento de resolver las promises");
-	for (let index = 0; index < resultsTicketOrders.length; index++) {
-		const ticketOrder = resultsTicketOrders[index];
-		console.log("Member: ", ticketOrder.ordering_Member);
-		let data;
-		let completed = false;
-		do {
-			try {
-				let result = await axios.get(
-					`${process.env.BUBBLE_API}/Member/${ticketOrder.ordering_Member}`,
-					config
-				);
-				data = result.data;
-				completed = data?.response !== undefined;
-			} catch (err) {
-				console.log("err", err);
-			}
-		} while (!completed);
+    const config = {
+        headers: {
+            "Authorization": `Bearer ${process.env.BUBBLE_API_KEY}`
+        },
+        params: {
+            limit: 100,
+            cursor: 0 // user.cursor +1 || 0
+        },
+        timeout: 5000,
+    }
+    const {data: dataTicketTypes} = await axios.get(`${process.env.BUBBLE_API}/TicketType`, config)
+    ticketTypes = dataTicketTypes.response.results
+    console.log(ticketTypes)
+    const {data: dataMembershipTypes} = await axios.get(`${process.env.BUBBLE_API}/MembershipType`, config)
+    membershipsTypes = dataMembershipTypes.response.results
+    console.log(membershipsTypes)
+    do {
+        console.log("while", config.params.cursor, remaining)
+        dataTicketOrder = await axios.get(`${process.env.BUBBLE_API}/TicketOrder`, config);
+        remaining = dataTicketOrder.data.response.remaining
+        //Filter non test tickets, i.e price different of $1 USD
+        let nonTestTickets = dataTicketOrder.data.response.results.filter(ticketOrder => ticketOrder.ticket_type_price!=1 &&  ticketOrder.status =='PAYED_WITH_STRIPE')
+        console.log ("non test tickets in interation: ",nonTestTickets.length)
+        resultsTicketOrders.push(...nonTestTickets)
+        config.params.cursor += config.params.limit
+    } while (remaining > 0);
+    config.params.cursor = 0
+    const response = []
+    console.log("resultsTicketOrders.length",resultsTicketOrders.length)
+    console.log("Es momento de resolver las promises")
+    for (let index = 0; index < resultsTicketOrders.length; index++) {
+        const ticketOrder = resultsTicketOrders[index]
+        console.log("Member: ",ticketOrder.ordering_Member) 
+        let data 
+        let completed = false
+        do{
+            try{
+                let result = await axios.get(`${process.env.BUBBLE_API}/Member/${ticketOrder.ordering_Member}`, config)    
+                data = result.data
+                completed = data?.response!=undefined
+            }catch(err){
+                console.log("err",err)
+            }
+        }while(!completed)
+        
+ 
+        const membership = membershipsTypes.find((ms) => {
+            return data?.response?.membership === ms._id
+        })
+        
+        try{
 
-		const membership = membershipsTypes.find((ms) => {
-			return data?.response?.membership === ms._id;
-		});
 
-		console.log(data?.response.first_name, index);
-		let newTicket = {
-			event_code: "Evolution2022",
-			registered_by_user_id: -1,
-			identification_img_url: "",
-			identification_img_file_name: "",
-			email: data?.response?.email,
-			first_name: ticketOrder.attendee_name,
-			last_name: "",
-			mobile_number: "",
-			// TODO: switch for ticket type to return slug
-			badge: "",
-			adminuser: "",
-			adminpassword: "",
-			adminsub: "",
-			arrivaldate: "",
-			accessdate: "",
-			limitdate: "",
-			qr_code: ticketOrder._id,
-			buyerSmartId: data?.response?.pin,
-			buyerName: data?.response?.first_name,
-			buyerRank: membership?.name,
-			ticketPrice: -1,
-			ticketType: "",
-		};
-		let badgeType = ticketTypes.find(
-			(type) => type?._id === ticketOrder?.original_TicketType
-		);
-		newTicket.ticketPrice = badgeType.price;
-		newTicket.ticketType = badgeType._id;
+        console.log(data?.response.first_name, index)
+        let newTicket = {
+            event_code: "Evolution2022",
+            registered_by_user_id: -1,
+            identification_img_url: "",
+            identification_img_file_name: "",
+            email: data?.response?.email,
+            first_name: ticketOrder.attendee_name?ticketOrder.attendee_name:"PENDIENTE",
+            last_name: "",
+            mobile_number: "",
+            // TODO: switch for ticket type to return slug
+            badge: "",
+            adminuser: "",
+            adminpassword: "",
+            adminsub: "",
+            arrivaldate: "",
+            accessdate: "",
+            limitdate: "",
+            qr_code: ticketOrder._id,
+            buyerSmartId: data?.response?.pin,
+            buyerName: data?.response?.first_name,
+            buyerRank: membership?.name,
+            ticketPrice: -1,
+            ticketType: ""
+            
+        }
+        let badgeType = ticketTypes.find(type => type?._id === ticketOrder?.original_TicketType)
+        newTicket.ticketPrice = badgeType.price
+        newTicket.ticketType = badgeType._id
 
-		if (badgeType.name.toLowerCase().trim().includes("platinum")) {
-			newTicket.badge = "platinum";
-		}
-		if (badgeType.name.toLowerCase().trim().includes("vip")) {
-			newTicket.badge = "vip";
-		}
-		if (badgeType.name.toLowerCase().trim().includes("gold a")) {
-			newTicket.badge = "gold-a";
-		}
-		if (badgeType.name.toLowerCase().trim().includes("gold b")) {
-			newTicket.badge = "gold-b";
-		}
-		//console.log("badgeType",badgeType.name)
-		console.log("newTicket.badge", newTicket.badge);
+        if(badgeType.name.toLowerCase().trim().includes("platinum reservad")){
+            newTicket.badge="platinum-reservado"
+        }else
+        if(badgeType.name.toLowerCase().trim().includes("platinum")){
+            newTicket.badge="platinum"
+        }else 
+        if(badgeType.name.toLowerCase().trim().includes("vip")){
+            newTicket.badge="vip"
+        } else
+        if(badgeType.name.toLowerCase().trim().includes("gold a")){
+            newTicket.badge="gold-a"
+        } else
+        if(badgeType.name.toLowerCase().trim().includes("gold b")){
+            newTicket.badge="gold-b"
+        } else
+        //console.log("badgeType",badgeType.name)
+        console.log("newTicket.badge",newTicket.badge)
 
-		response.push(newTicket);
-	}
+        response.push(newTicket)
+        }catch(e){
+            console.log(e)
+        }
+        
+    }
 	await User.insertMany(response);
 	res.status(200).json(response);
 });
