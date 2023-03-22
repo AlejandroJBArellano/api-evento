@@ -1080,7 +1080,9 @@ app.get("/status-count", async (req, res) => {
 					? finalCount["COMPLETED"] + iterator.count
 					: iterator.count;
 		}
-		finalCount["PENDING"] = attendeesLength - attendeesWithTag;
+		finalCount["PENDING"] =
+			attendeesLength -
+			(finalCount["REPOSITION"] + finalCount["COMPLETED"]);
 		res.status(200).json({
 			data: finalCount,
 			success: true,
