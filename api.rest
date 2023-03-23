@@ -223,3 +223,6 @@ GET http://localhost:3300/attendee-by-status?countTagId=0&limit=50&skip=0  HTTP/
 
 ### 
 GET http://localhost:3300/another-endpoint?countTagId=1&countTagId=2&countTagId=0&limit=50&skip=0  HTTP/1.1
+
+###
+GET http://localhost:3300/tag_id-user?tag_id=alejandro HTTP/1.1
