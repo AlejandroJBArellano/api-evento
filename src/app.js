@@ -254,6 +254,9 @@ app.get("/tag_id-user", async (req, res) => {
 		const userTagId = await UserTagId.findOne({
 			tag_id: req.query.tag_id,
 		});
+		if (!userTagId) {
+			return res.json(undefined);
+		}
 		const user = await User.findById(userTagId.user_id);
 		const tags = await UserTagId.find({
 			user_id: user._id,
@@ -1496,12 +1499,155 @@ app.post("/insert-users", async (req, res) => {
 
 app.get("/attendees-table", async (req, res) => {
 	try {
-		const attendees = await User.find(req.query);
+		console.log("req.query", req.query);
+		//TODO: paginationOptions = req.query
+		//TODO: searchParameters = req.query
+		const paginationQueries = [
+			"skip",
+			"limit",
+			"searchComposite",
+			"_id",
+			"createdAt",
+			"updatedAt",
+			"countTagId",
+		];
+		const queriesNotToRegExp = ["_id", "qr_code"];
+		const query = {};
+
+		Object.keys(req.query).forEach((field) => {
+			if (queriesNotToRegExp.includes(field)) {
+				query[field] = req.query[field];
+				return;
+			}
+			if (paginationQueries.includes(field)) return;
+			if (Array.isArray(req.query[field])) {
+				query[field] = {
+					$in: req.query[field],
+				};
+				return;
+			}
+			const value = diacriticSensitiveRegex(req.query[field]);
+			if (value.length > 0) {
+				const regexp = new RegExp(value, "i");
+				console.log(regexp);
+				query[field] = regexp;
+			}
+		});
+		console.log("query", query);
+		const { searchComposite } = req.query;
+
+		if (searchComposite?.length) {
+			const event = await Event.findOne();
+
+			const valueDiacritic = diacriticSensitiveRegex(
+				searchComposite,
+				"i"
+			);
+			const orQuery = event
+				.toObject()
+				.tableColumnNames.map((e) => e.field)
+				.filter((key) => !paginationQueries.includes(key))
+				.map((key) => ({ [key]: new RegExp(valueDiacritic, "i") }));
+			console.log("orQuery for searchComposite ");
+			console.table(orQuery);
+
+			const queryMongo = {
+				$or: orQuery,
+			};
+
+			const users = await User.find(queryMongo);
+			const count = await User.count(queryMongo);
+
+			const users_ids = users?.map((user) =>
+				user?.toObject()?._id.toString()
+			);
+			const tag_ids = await UserTagId.find(
+				{
+					user_id: {
+						$in: users_ids,
+					},
+				},
+				"tag_id user_id createdAt"
+			);
+
+			const usersWithTagId = users.map((user) => {
+				const userTagIds = tag_ids.filter((userTagId) => {
+					return userTagId.user_id === user._id.toString();
+				});
+				return {
+					...user._doc,
+					countTagId: userTagIds.length,
+					lastTagCreatedAt: new Date(
+						userTagIds.reduce(
+							(acc, curr) =>
+								new Date(acc) > new Date(curr.createdAt)
+									? new Date(acc)
+									: new Date(curr.createdAt),
+							undefined
+						)
+					),
+				};
+			});
+
+			return res.json({
+				data: usersWithTagId,
+				searchComposite,
+				success: true,
+				count,
+			});
+		}
+
+		const users = await User.find(query, {});
+
+		const users_ids = users?.map((user) => user?._doc?._id.toString());
+
+		const tag_ids = await UserTagId.find(
+			{
+				user_id: {
+					$in: users_ids,
+				},
+			},
+			"tag_id user_id createdAt"
+		);
+
+		const usersWithTagId = users.map((user) => {
+			const userTagIds = tag_ids.filter((userTagId) => {
+				return userTagId.user_id === user._id.toString();
+			});
+			return {
+				...user._doc,
+				countTagId: userTagIds.length,
+				lastTagCreatedAt: new Date(
+					userTagIds.reduce(
+						(acc, curr) =>
+							new Date(acc) > new Date(curr.createdAt)
+								? new Date(acc)
+								: new Date(curr.createdAt),
+						undefined
+					)
+				),
+			};
+		});
+
+		const usersFinal = usersWithTagId.filter((attendee) => {
+			if (Array.isArray(req.query.countTagId)) {
+				return req.query.countTagId.includes(attendee.countTagId);
+			} else {
+				if (req.query.countTagId >= 2) {
+					return attendee.countTagId >= 2;
+				}
+				return req.query.countTagId == attendee.countTagId;
+			}
+		});
+
+		const count = await User.count(query);
 		res.status(200).json({
-			data: attendees,
-			success: false,
+			data: req.query.countTagId ? usersFinal : usersWithTagId,
+			success: true,
+			count,
 		});
 	} catch (error) {
+		console.log(error);
 		res.status(500).json({
 			error,
 			success: false,

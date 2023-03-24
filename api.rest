@@ -226,3 +226,6 @@ GET http://localhost:3300/another-endpoint?countTagId=1&countTagId=2&countTagId=
 
 ###
 GET http://localhost:3300/tag_id-user?tag_id=alejandro HTTP/1.1
+
+###
+GET http://localhost:3300/attendees-table?searchComposite=ale
