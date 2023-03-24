@@ -1,6 +1,6 @@
-require("dotenv").config()
-const { HOST, DATABASE, URI } = process.env
+require("dotenv").config();
+const { URI } = process.env;
 
-const URIDatabase = `${URI}`
+const URIDatabase = `${URI}`;
 
-module.exports = URIDatabase
+module.exports = URIDatabase;
