@@ -296,8 +296,8 @@ app.post("/new-entrance-with-date", (req, res) => {
 			tag_id: req.body.tag_id,
 		}).then(async (response) => {
 			if (response) {
-				var target = {};
-				for (var i in response._doc) {
+				const target = {};
+				for (const i in response._doc) {
 					if (["_id"].indexOf(i) >= 0) continue;
 					if (!Object.prototype.hasOwnProperty.call(response._doc, i))
 						continue;
@@ -377,8 +377,8 @@ app.post("/new-entrance", (req, res) => {
 				await newEntrance.save();
 				res.status(200).json(newEntrance);
 			}
-			let target = {};
-			for (var i in response._doc) {
+			const target = {};
+			for (const i in response._doc) {
 				if (
 					["_id"].indexOf(i) >= 0 ||
 					!Object.prototype.hasOwnProperty.call(response._doc, i)
@@ -410,8 +410,8 @@ app.post("/admonitions", async (req, res) => {
 			const user = await UserTagId.findOne({ tag_id: e.tag_id });
 			if (user) {
 				user._id = undefined;
-				let target = {};
-				for (var i in user) {
+				const target = {};
+				for (const i in user) {
 					if (["_id"].indexOf(i) >= 0) continue;
 					if (!Object.prototype.hasOwnProperty.call(user._doc, i))
 						continue;
@@ -713,7 +713,7 @@ app.get("/insert-users", async (req, res) => {
 
 app.get("/insert-data-bubble", async (req, res) => {
 	let remaining = 0;
-	let resultsTicketOrders = [];
+	const resultsTicketOrders = [];
 	let dataTicketOrder = null;
 
 	const config = {
@@ -746,10 +746,10 @@ app.get("/insert-data-bubble", async (req, res) => {
 		);
 		remaining = dataTicketOrder.data.response.remaining;
 		//Filter non test tickets, i.e price different of $1 USD
-		let nonTestTickets = dataTicketOrder.data.response.results.filter(
+		const nonTestTickets = dataTicketOrder.data.response.results.filter(
 			(ticketOrder) =>
-				ticketOrder.ticket_type_price != 1 &&
-				ticketOrder.status == "PAYED_WITH_STRIPE"
+				ticketOrder.ticket_type_price !== 1 &&
+				ticketOrder.status === "PAYED_WITH_STRIPE"
 		);
 		console.log("non test tickets in interation: ", nonTestTickets.length);
 		resultsTicketOrders.push(...nonTestTickets);
@@ -766,12 +766,12 @@ app.get("/insert-data-bubble", async (req, res) => {
 		let completed = false;
 		do {
 			try {
-				let result = await axios.get(
+				const result = await axios.get(
 					`${process.env.BUBBLE_API}/Member/${ticketOrder.ordering_Member}`,
 					config
 				);
 				data = result.data;
-				completed = data?.response != undefined;
+				completed = Boolean(data?.response);
 			} catch (err) {
 				console.log("err", err);
 			}
@@ -783,7 +783,7 @@ app.get("/insert-data-bubble", async (req, res) => {
 
 		try {
 			console.log(data?.response.first_name, index);
-			let newTicket = {
+			const newTicket = {
 				event_code: "Evolution2022",
 				registered_by_user_id: -1,
 				identification_img_url: "",
@@ -809,7 +809,7 @@ app.get("/insert-data-bubble", async (req, res) => {
 				ticketPrice: -1,
 				ticketType: "",
 			};
-			let badgeType = ticketTypes.find(
+			const badgeType = ticketTypes.find(
 				(type) => type?._id === ticketOrder?.original_TicketType
 			);
 			newTicket.ticketPrice = badgeType.price;
@@ -1473,7 +1473,7 @@ app.post("/insert-users", async (req, res) => {
 		const finalAttendees = attendeesRows
 			.slice(1, attendeesRows.length)
 			.map((row) => {
-				let finalValue = {};
+				const finalValue = {};
 				Object.keys(camposToColumnas).forEach((key) => {
 					const value = row[camposToColumnas[key]];
 					finalValue[key] = value;
@@ -1499,152 +1499,51 @@ app.post("/insert-users", async (req, res) => {
 
 app.get("/attendees-table", async (req, res) => {
 	try {
-		console.log("req.query", req.query);
-		//TODO: paginationOptions = req.query
-		//TODO: searchParameters = req.query
-		const paginationQueries = [
-			"skip",
-			"limit",
-			"searchComposite",
-			"_id",
-			"createdAt",
-			"updatedAt",
-			"countTagId",
-		];
-		const queriesNotToRegExp = ["_id", "qr_code"];
-		const query = {};
-
-		Object.keys(req.query).forEach((field) => {
-			if (queriesNotToRegExp.includes(field)) {
-				query[field] = req.query[field];
-				return;
-			}
-			if (paginationQueries.includes(field)) return;
-			if (Array.isArray(req.query[field])) {
-				query[field] = {
-					$in: req.query[field],
-				};
-				return;
-			}
-			const value = diacriticSensitiveRegex(req.query[field]);
-			if (value.length > 0) {
-				const regexp = new RegExp(value, "i");
-				console.log(regexp);
-				query[field] = regexp;
-			}
-		});
-		console.log("query", query);
-		const { searchComposite } = req.query;
-
-		if (searchComposite?.length) {
-			const event = await Event.findOne();
-
-			const valueDiacritic = diacriticSensitiveRegex(
-				searchComposite,
-				"i"
-			);
-			const orQuery = event
-				.toObject()
-				.tableColumnNames.map((e) => e.field)
-				.filter((key) => !paginationQueries.includes(key))
-				.map((key) => ({ [key]: new RegExp(valueDiacritic, "i") }));
-			console.log("orQuery for searchComposite ");
-			console.table(orQuery);
-
-			const queryMongo = {
-				$or: orQuery,
-			};
-
-			const users = await User.find(queryMongo);
-			const count = await User.count(queryMongo);
-
-			const users_ids = users?.map((user) =>
-				user?.toObject()?._id.toString()
-			);
-			const tag_ids = await UserTagId.find(
-				{
-					user_id: {
-						$in: users_ids,
-					},
-				},
-				"tag_id user_id createdAt"
-			);
-
-			const usersWithTagId = users.map((user) => {
-				const userTagIds = tag_ids.filter((userTagId) => {
-					return userTagId.user_id === user._id.toString();
-				});
-				return {
-					...user._doc,
-					countTagId: userTagIds.length,
-					lastTagCreatedAt: new Date(
-						userTagIds.reduce(
-							(acc, curr) =>
-								new Date(acc) > new Date(curr.createdAt)
-									? new Date(acc)
-									: new Date(curr.createdAt),
-							undefined
-						)
-					),
-				};
-			});
-
-			return res.json({
-				data: usersWithTagId,
-				searchComposite,
-				success: true,
-				count,
-			});
-		}
-
-		const users = await User.find(query, {});
-
-		const users_ids = users?.map((user) => user?._doc?._id.toString());
-
-		const tag_ids = await UserTagId.find(
+		const usersWithTagId = await User.aggregate([
 			{
-				user_id: {
-					$in: users_ids,
+				$lookup: {
+					from: "usertagids",
+					localField: "_id",
+					foreignField: "user_id",
+					as: "tag_ids",
 				},
 			},
-			"tag_id user_id createdAt"
-		);
+			{
+				$project: {
+					_id: 1,
+					doc: "$$ROOT",
+					countTagId: { $size: "$tag_ids" },
+					lastTagCreatedAt: {
+						$cond: {
+							if: { $eq: [{ $size: "$tag_ids" }, 0] },
+							then: null,
+							else: {
+								$max: "$tag_ids.createdAt",
+							},
+						},
+					},
+				},
+			},
+			{
+				$group: {
+					_id: null,
+					data: { $push: "$$ROOT" },
+					count: { $sum: 1 },
+				},
+			},
+			{
+				$project: {
+					_id: 0,
+					data: 1,
+					count: 1,
+				},
+			},
+		]);
 
-		const usersWithTagId = users.map((user) => {
-			const userTagIds = tag_ids.filter((userTagId) => {
-				return userTagId.user_id === user._id.toString();
-			});
-			return {
-				...user._doc,
-				countTagId: userTagIds.length,
-				lastTagCreatedAt: new Date(
-					userTagIds.reduce(
-						(acc, curr) =>
-							new Date(acc) > new Date(curr.createdAt)
-								? new Date(acc)
-								: new Date(curr.createdAt),
-						undefined
-					)
-				),
-			};
-		});
-
-		const usersFinal = usersWithTagId.filter((attendee) => {
-			if (Array.isArray(req.query.countTagId)) {
-				return req.query.countTagId.includes(attendee.countTagId);
-			} else {
-				if (req.query.countTagId >= 2) {
-					return attendee.countTagId >= 2;
-				}
-				return req.query.countTagId == attendee.countTagId;
-			}
-		});
-
-		const count = await User.count(query);
-		res.status(200).json({
-			data: req.query.countTagId ? usersFinal : usersWithTagId,
+		return res.json({
+			data: usersWithTagId[0]?.data,
 			success: true,
-			count,
+			count: usersWithTagId[0]?.count || 0,
 		});
 	} catch (error) {
 		console.log(error);
@@ -1707,11 +1606,8 @@ app.get("/another-endpoint", async (req, res) => {
 						countTagId: parseInt(countTagId),
 					},
 			  };
-		console.log("matchByCountTagId", {
-			$match: {
-				countTagId: matchByCountTagId,
-			},
-		});
+		console.log("matchByCountTagId");
+		console.dir(matchByCountTagId);
 		const result = await User.aggregate([
 			{
 				$addFields: {
