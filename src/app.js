@@ -347,53 +347,51 @@ app.post("/new-entrance-with-date", (req, res) => {
 
 app.post("/new-entrance", (req, res) => {
 	try {
-		UserTagId.findOne({
-			tag_id: req.body.tag_id,
-		}).then(async (response) => {
+		const funcion = req.body.map(async (e) => {
+			const response = await UserTagId.findOne({
+				tag_id: e.tag_id,
+			});
+
+			let target = {};
+
 			if (!response) {
-				// TODO: target without embed properties
-				const target = {
-					tag_id: req.body.tag_id,
+				target = {
 					registered_by_user_id: 0,
 					user_id: "_desconocido",
 					first_name: "_desconocido",
 					last_name: "_desconocido",
-					email: "",
-					mobile_number: "",
 					badge: "",
-					user_role: {
-						role: "_desconocido",
-					},
-					organization_role: {
-						region: "_desconocido",
-						zona: "_desconocido",
-						distrito: "_desconocido",
-						tienda: "_desconocido",
-					},
-					id_lectora: req.body.id_lectora,
-					event_type: req.body.event_type,
 				};
 				const newEntrance = new EntranceControl(target);
 				await newEntrance.save();
 				res.status(200).json(newEntrance);
+			} else {
+				for (const i in response._doc) {
+					if (
+						["_id"].indexOf(i) >= 0 ||
+						!Object.prototype.hasOwnProperty.call(response._doc, i)
+					)
+						continue;
+					target[i] = response._doc[i];
+				}
 			}
-			const target = {};
-			for (const i in response._doc) {
-				if (
-					["_id"].indexOf(i) >= 0 ||
-					!Object.prototype.hasOwnProperty.call(response._doc, i)
-				)
-					continue;
-				target[i] = response._doc[i];
+			target.tag_id = e.tag_id;
+			target.id_lectora = e.id_lectora;
+			target.event_type = e.event_type;
+			if (e.created) {
+				target.created = new Date(e.created);
 			}
-			const newEntrance = new EntranceControl({
-				...target,
-				id_lectora: req.body.id_lectora,
-				event_type: req.body.event_type,
-			});
-			await newEntrance.save();
-			res.status(200).json(newEntrance);
+			console.log("response", target);
+			return target;
 		});
+		Promise.all(funcion)
+			.then((results) => {
+				EntranceControl.insertMany(results).then((arr) =>
+					res.status(200).json(arr)
+				);
+				return;
+			})
+			.catch((e) => console.log(e));
 	} catch (error) {
 		res.status(500).json(error);
 		return;
