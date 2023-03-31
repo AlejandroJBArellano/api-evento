@@ -1446,15 +1446,11 @@ app.post(
 				});
 			}
 			res.json({
-				// file: req.file
 				data: {
 					fields: jsa[0],
 					users: jsa,
 					event: events[0],
 				},
-				// success: true
-				// workbook: workbook.Strings.map(el => el.t)
-				// workbook
 			});
 		} catch (error) {
 			console.log(error);
@@ -1476,7 +1472,9 @@ app.post("/insert-users", async (req, res) => {
 				const finalValue = {};
 				Object.keys(camposToColumnas).forEach((key) => {
 					const value = row[camposToColumnas[key]];
-					finalValue[key] = value;
+					if (value) {
+						finalValue[key] = value;
+					}
 				});
 				return finalValue;
 			});
@@ -1501,9 +1499,14 @@ app.get("/attendees-table", async (req, res) => {
 	try {
 		const usersWithTagId = await User.aggregate([
 			{
+				$addFields: {
+					userId: { $toString: "$_id" },
+				},
+			},
+			{
 				$lookup: {
 					from: "usertagids",
-					localField: "_id",
+					localField: "userId",
 					foreignField: "user_id",
 					as: "tag_ids",
 				},
