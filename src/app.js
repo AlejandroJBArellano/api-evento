@@ -1466,6 +1466,7 @@ app.post("/insert-users", async (req, res) => {
 		const { camposToColumnas, attendeesRows } = req.body;
 		const finalAttendees = attendeesRows
 			.slice(1, attendeesRows.length)
+			.filter((row) => row.length)
 			.map((row) => {
 				const finalValue = {};
 				Object.keys(camposToColumnas).forEach((key) => {
