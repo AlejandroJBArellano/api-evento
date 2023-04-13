@@ -175,6 +175,7 @@ app.post("/tag_id-user", async (req, res) => {
 			...body,
 			...attendeeWithoutId,
 			user_id,
+			createdAt: new Date(),
 		});
 
 		console.log("newBadgeBonding", newBadgeBonding);
@@ -183,6 +184,7 @@ app.post("/tag_id-user", async (req, res) => {
 		res.json({
 			...newBadgeBonding._doc,
 			countTagId: tag_ids.length,
+			lastTagCreatedAt: newBadgeBonding.toObject().createdAt,
 		});
 	} catch (error) {
 		console.log(error);
@@ -631,13 +633,30 @@ app.get("/influx", async (req, res) => {
 	}
 });
 
-app.delete("/user_tag-id", async (req, res) => {
-	await UserTagId.findOneAndDelete({
-		tag_id: req.query.tag_id,
-	});
-	res.json({
-		success: true,
-	}).status(200);
+app.put("/user_tag-id", async (req, res) => {
+	try {
+		const attendeeTagId = await UserTagId.findOne({
+			tag_id: req.body.tag_id,
+		});
+		(attendeeTagId.tag_id = `${req.body.tag_id}_desvinculado`),
+			await attendeeTagId.save();
+		const tagsAttendee = await UserTagId.find(
+			{
+				user_id: attendeeTagId.toObject().user_id,
+			},
+			"tag_id user_id"
+		);
+		res.json({
+			success: true,
+			data: { tags: tagsAttendee, countTagId: tags.length },
+			attendeeTagId,
+		}).status(200);
+	} catch (error) {
+		console.log(error);
+		res.status(500).json({
+			error,
+		});
+	}
 });
 
 app.get("/top-admonitions", async (req, res) => {
