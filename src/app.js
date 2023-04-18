@@ -638,7 +638,10 @@ app.put("/user_tag-id", async (req, res) => {
 		const attendeeTagId = await UserTagId.findOne({
 			tag_id: req.body.tag_id,
 		});
-		(attendeeTagId.tag_id = `${req.body.tag_id}_desvinculado`),
+		const unattachedAt = new Date();
+		(attendeeTagId.tag_id = `${
+			req.body.tag_id
+		}_desvinculado_${unattachedAt.toISOString()}`),
 			await attendeeTagId.save();
 		const tagsAttendee = await UserTagId.find(
 			{
@@ -648,13 +651,38 @@ app.put("/user_tag-id", async (req, res) => {
 		);
 		res.json({
 			success: true,
-			data: { tags: tagsAttendee, countTagId: tags.length },
+			data: { tags: tagsAttendee, countTagId: tagsAttendee.length },
 			attendeeTagId,
 		}).status(200);
 	} catch (error) {
 		console.log(error);
 		res.status(500).json({
 			error,
+		});
+	}
+});
+
+app.put("/deliver-tag", async (req, res) => {
+	try {
+		const tagId = await UserTagId.findOne({
+			tag_id: req.body.tag_id,
+		});
+
+		console.log(tagId);
+
+		tagId.delivered = true;
+
+		await tagId.save();
+
+		res.json({
+			success: true,
+			data: tagId,
+		});
+	} catch (error) {
+		console.log(error);
+		res.status(500).json({
+			error,
+			success: false,
 		});
 	}
 });
@@ -971,7 +999,7 @@ app.get("/attendees", async (req, res) => {
 						$in: users_ids,
 					},
 				},
-				"tag_id user_id createdAt"
+				"tag_id user_id createdAt delivered"
 			);
 
 			// console.log("tag ids searchComposite", tag_ids)
@@ -980,9 +1008,15 @@ app.get("/attendees", async (req, res) => {
 				const userTagIds = tag_ids.filter((userTagId) => {
 					return userTagId.user_id === user._id.toString();
 				});
+
+				const hasSomeDeliveredTag = tag_ids.some(
+					(userTagId) => userTagId.delivered
+				);
+
 				return {
 					...user._doc,
 					countTagId: userTagIds.length,
+					delivered: hasSomeDeliveredTag,
 					lastTagCreatedAt: new Date(
 						userTagIds.reduce(
 							(acc, curr) =>
@@ -1013,16 +1047,22 @@ app.get("/attendees", async (req, res) => {
 					$in: users_ids,
 				},
 			},
-			"tag_id user_id createdAt"
+			"tag_id user_id createdAt delivered"
 		);
 
 		const usersWithTagId = users.map((user) => {
 			const userTagIds = tag_ids.filter((userTagId) => {
 				return userTagId.user_id === user._id.toString();
 			});
+
+			const hasSomeDeliveredTag = userTagIds.some(
+				(userTagId) => userTagId.delivered
+			);
+
 			return {
 				...user._doc,
 				countTagId: userTagIds.length,
+				delivered: hasSomeDeliveredTag,
 				lastTagCreatedAt: new Date(
 					userTagIds.reduce(
 						(acc, curr) =>

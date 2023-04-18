@@ -204,7 +204,7 @@ GET http://localhost:3000/top-admonitions HTTP/1.1
 ###
 GET http://localhost:3000/admonition-by-tag?tag_id=alejandr HTTP/1.1
 ###
-GET http://localhost:3000/influx HTTP/1.1
+GET http://localhost:3300/influx HTTP/1.1
 ###
 GET http://localhost:3000/insert-data-bubble HTTP/1.1
 ###
