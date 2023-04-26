@@ -1776,4 +1776,146 @@ app.get("/another-endpoint", async (req, res) => {
 		});
 	}
 });
+
+app.get("/delivered-graphic", async (req, res) => {
+	try {
+		const userTagIds = await User.aggregate([
+			{
+				$addFields: {
+					userId: { $toString: "$_id" },
+				},
+			},
+			{
+				$lookup: {
+					from: "usertagids",
+					localField: "userId",
+					foreignField: "user_id",
+					as: "tags",
+				},
+			},
+			// {
+			// 	$addFields: {
+			// 		delivered: {
+			// 			$anyElementTrue: {
+			// 				$map: {
+			// 					input: "$tags",
+			// 					as: "tag",
+			// 					in: "$$tag.delivered",
+			// 				},
+			// 			},
+			// 		},
+			// 	},
+			// },
+			// {
+			// 	$addFields: {
+			// 		has_tags: {
+			// 			$gt: [{ $size: "$tags" }, 0],
+			// 		},
+			// 		has_delivered_tags: {
+			// 			$anyElementTrue: {
+			// 				$map: {
+			// 					input: "$tags",
+			// 					as: "tag",
+			// 					in: "$$tag.delivered",
+			// 				},
+			// 			},
+			// 		},
+			// 	},
+			// },
+			// {
+			// 	$addFields: {
+			// 		user_type: {
+			// 			$switch: {
+			// 				branches: [
+			// 					{
+			// 						case: { $not: "$has_tags" },
+			// 						then: "no_tags",
+			// 					},
+			// 					{
+			// 						case: { $not: "$has_delivered_tags" },
+			// 						then: "tags_without_delivered",
+			// 					},
+			// 				],
+			// 				default: "tags_with_delivered",
+			// 			},
+			// 		},
+			// 	},
+			// },
+			// {
+			// 	$group: {
+			// 		_id: "$user_type",
+			// 		users: {
+			// 			$push: {
+			// 				_id: "$_id",
+			// 				name: "$name",
+			// 			},
+			// 		},
+			// 	},
+			// },
+			{
+				$addFields: {
+					has_tags: {
+						$cond: [{ $gt: [{ $size: "$tags" }, 0] }, 1, 0],
+					},
+					has_delivered_tags: {
+						$cond: [
+							{
+								$anyElementTrue: {
+									$map: {
+										input: "$tags",
+										as: "tag",
+										in: "$$tag.delivered",
+									},
+								},
+							},
+							1,
+							0,
+						],
+					},
+				},
+			},
+			{
+				$addFields: {
+					user_type: {
+						$switch: {
+							branches: [
+								{
+									case: { $eq: ["$has_tags", 0] },
+									then: "no_tags",
+								},
+								{
+									case: { $eq: ["$has_delivered_tags", 0] },
+									then: "tags_without_delivered",
+								},
+							],
+							default: "tags_with_delivered",
+						},
+					},
+				},
+			},
+			{
+				$group: {
+					_id: "$user_type",
+					users: {
+						$push: {
+							_id: "$_id",
+							name: "$name",
+						},
+					},
+				},
+			},
+			{
+				$project: {
+					_id: "$_id",
+					user_type: 1,
+					user_count: { $size: "$users" },
+				},
+			},
+		]);
+		res.json({ data: userTagIds, success: true });
+	} catch (error) {
+		console.log(error);
+		res.json({ error, success: false });
+	}
+});
 module.exports = app;
