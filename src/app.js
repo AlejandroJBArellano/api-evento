@@ -1047,7 +1047,7 @@ app.get("/attendees", async (req, res) => {
 					$in: users_ids,
 				},
 			},
-			"tag_id user_id createdAt delivered"
+			"tag_id user_id delivered updatedAt"
 		);
 
 		const usersWithTagId = users.map((user) => {
@@ -1066,9 +1066,9 @@ app.get("/attendees", async (req, res) => {
 				lastTagCreatedAt: new Date(
 					userTagIds.reduce(
 						(acc, curr) =>
-							new Date(acc) > new Date(curr.createdAt)
+							new Date(acc) > new Date(curr.updatedAt)
 								? new Date(acc)
-								: new Date(curr.createdAt),
+								: new Date(curr.updatedAt),
 						undefined
 					)
 				),
@@ -1574,15 +1574,18 @@ app.get("/attendees-table", async (req, res) => {
 					_id: 1,
 					doc: "$$ROOT",
 					countTagId: { $size: "$tag_ids" },
-					lastTagCreatedAt: {
-						$cond: {
-							if: { $eq: [{ $size: "$tag_ids" }, 0] },
-							then: null,
-							else: {
-								$max: "$tag_ids.createdAt",
-							},
+					timestamps: {
+						$map: {
+							input: "$tag_ids",
+							as: "item",
+							in: "$$item.updatedAt",
 						},
 					},
+				},
+			},
+			{
+				$addFields: {
+					lastTagCreatedAt: { $max: "$timestamps" },
 				},
 			},
 			{
@@ -1918,4 +1921,158 @@ app.get("/delivered-graphic", async (req, res) => {
 		res.json({ error, success: false });
 	}
 });
+
+app.get("/delivered-status", async (req, res) => {
+	try {
+		const { delivered, skip, limit } = req.query;
+
+		if (!delivered) {
+			throw new Error("No hay delivered status");
+		}
+
+		const aggregation = [
+			{
+				$addFields: {
+					userId: { $toString: "$_id" },
+				},
+			},
+			{
+				$lookup: {
+					from: "usertagids",
+					localField: "userId",
+					foreignField: "user_id",
+					as: "tags",
+				},
+			},
+			{
+				$addFields: {
+					countTagId: { $size: "$tags" },
+					delivered: {
+						$cond: [
+							{
+								$anyElementTrue: {
+									$map: {
+										input: "$tags",
+										as: "tag",
+										in: "$$tag.delivered",
+									},
+								},
+							},
+							1,
+							0,
+						],
+					},
+					timestamps: {
+						$map: {
+							input: "$tags",
+							as: "item",
+							in: "$$item.updatedAt",
+						},
+					},
+				},
+			},
+			{
+				$addFields: {
+					lastTagCreatedAt: { $max: "$timestamps" },
+				},
+			},
+		];
+
+		if (delivered === "yes") {
+			aggregation.push({
+				$match: {
+					"tags.delivered": true,
+				},
+			});
+		} else if (delivered === "no") {
+			aggregation.push({
+				$match: {
+					$and: [
+						{ tags: { $exists: true, $ne: [] } },
+						{ "tags.delivered": { $exists: false } },
+					],
+				},
+			});
+		}
+
+		aggregation.push({
+			$skip: parseInt(skip),
+		});
+
+		aggregation.push({
+			$limit: parseInt(limit),
+		});
+
+		const attendees = await User.aggregate(aggregation);
+
+		res.status(200).json({
+			data: attendees,
+			success: true,
+		});
+	} catch (error) {
+		console.log(error);
+		res.status(500).json({
+			error,
+		});
+	}
+});
+
+app.get("/delivered-count", async (req, res) => {
+	try {
+		const pipeline = [
+			{
+				$addFields: {
+					userId: { $toString: "$_id" },
+				},
+			},
+			{
+				$lookup: {
+					from: "usertagids",
+					localField: "userId",
+					foreignField: "user_id",
+					as: "tags",
+				},
+			},
+			{
+				$addFields: {
+					countTagId: { $size: "$tags" },
+					hasDeliveredTag: {
+						$in: [true, "$tags.delivered"],
+					},
+				},
+			},
+			{
+				$group: {
+					_id: null,
+					YES: {
+						$sum: {
+							$cond: {
+								if: "$hasDeliveredTag",
+								then: 1,
+								else: 0,
+							},
+						},
+					},
+					NO: {
+						$sum: {
+							$cond: {
+								if: { $gt: ["$countTagId", 0] },
+								then: 1,
+								else: 0,
+							},
+						},
+					},
+				},
+			},
+		];
+
+		const result = await User.aggregate(pipeline);
+
+		res.json({data: result[0], success: true});
+	} catch (error) {
+		console.error(error);
+		res.status(500).send("Server Error");
+	}
+});
+
 module.exports = app;
