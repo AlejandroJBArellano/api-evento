@@ -140,10 +140,10 @@ app.put("/user/:id", async (req, res) => {
 		User.findByIdAndUpdate(req.params.id, req.body, {
 			returnDocument: "after",
 		})
-			.then((e) => res.json(e).status(200))
-			.catch((err) => res.json(err).status(500));
+			.then((e) => res.status(200).json(e))
+			.catch((err) => res.status(500).json(err));
 	} catch (error) {
-		res.json(error).status(500);
+		res.status(500).json(error);
 	}
 });
 
@@ -551,18 +551,18 @@ app.post("/answers", (req, res) => {
 app.get("/how-many-got-in", async (req, res) => {
 	try {
 		const user_ids = await EntranceControl.find().distinct("tag_id");
-		res.json(user_ids.length).status(200);
+		res.status(200).json(user_ids.length);
 	} catch (error) {
-		res.json(error).status(500);
+		res.status(500).json(error);
 	}
 });
 
 app.get("/total-users", async (req, res) => {
 	try {
 		const users = await User.find().count();
-		res.json(users).status(200);
+		res.status(200).json(users);
 	} catch (error) {
-		res.json(error).status(500);
+		res.status(500).json(error);
 	}
 });
 
@@ -626,10 +626,10 @@ app.get("/influx", async (req, res) => {
 			}
 			bucketForHour.attendees++;
 		}
-		res.json(buckets).status(200);
+		res.status(200).json(buckets);
 	} catch (error) {
 		console.log(error);
-		res.json(error).status(500);
+		res.status(500).json(error);
 	}
 });
 
@@ -649,11 +649,11 @@ app.put("/user_tag-id", async (req, res) => {
 			},
 			"tag_id user_id"
 		);
-		res.json({
+		res.status(200).json({
 			success: true,
 			data: { tags: tagsAttendee, countTagId: tagsAttendee.length },
 			attendeeTagId,
-		}).status(200);
+		});
 	} catch (error) {
 		console.log(error);
 		res.status(500).json({
@@ -698,7 +698,7 @@ app.get("/top-admonitions", async (req, res) => {
 	])
 		.sort("-totalPoints")
 		.limit(10);
-	res.json(admonitions).status(200);
+	res.status(200).json(admonitions);
 });
 
 app.get("/admonition-by-tag", async (req, res) => {
@@ -713,7 +713,7 @@ app.get("/admonition-by-tag", async (req, res) => {
 	userWithAdmonitions = admonition.find((value) => {
 		return value._id === req.query.tag_id;
 	});
-	res.json(userWithAdmonitions).status(200);
+	res.status(200).json(userWithAdmonitions);
 });
 
 app.get("/distinct-value/:distinct", async (req, res) => {
@@ -737,23 +737,23 @@ app.get("/config-registro-en-sitio", async (req, res) => {
 
 app.get("/insert-exhibitors", async (req, res) => {
 	getExhibitors();
-	res.json({
+	res.status(200).json({
 		message: "Exhibitors inserted",
-	}).status(200);
+	});
 });
 
 app.get("/insert-stores", async (req, res) => {
 	getStores();
-	res.json({
+	res.status(200).json({
 		message: "Stores inserted",
-	}).status(200);
+	});
 });
 
 app.get("/insert-users", async (req, res) => {
 	getUsers();
-	res.json({
+	res.status(200).json({
 		message: "Users inserted",
-	}).status(200);
+	});
 });
 
 app.get("/insert-data-bubble", async (req, res) => {
@@ -903,10 +903,18 @@ app.post("/login", async (req, res) => {
 		});
 	}
 
+	res.cookie("user", recorder._id, {
+		path: "/",
+	});
+
 	return res.status(200).json({
 		data: recorder,
 		success: true,
 	});
+});
+
+app.get("/logout", async (req, res) => {
+	res.clearCookie("user");
 });
 
 app.post("/replacement", async (req, res) => {
@@ -2068,7 +2076,7 @@ app.get("/delivered-count", async (req, res) => {
 
 		const result = await User.aggregate(pipeline);
 
-		res.json({data: result[0], success: true});
+		res.json({ data: result[0], success: true });
 	} catch (error) {
 		console.error(error);
 		res.status(500).send("Server Error");
