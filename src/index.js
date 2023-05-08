@@ -21,6 +21,10 @@ morgan.token(
 	"queryParam",
 	(req, res) => `req.query-${JSON.stringify(req.query)}`
 );
+morgan.token(
+	"inpulseRecorder",
+	(req, _res) => `user_${req.headers["ip-x-recorder"]}`
+);
 
 app.response.send = function sendOverWrite(body) {
 	originalSend.call(this, body);
@@ -28,7 +32,6 @@ app.response.send = function sendOverWrite(body) {
 };
 
 morgan.token("res-body", (_req, res) => JSON.stringify(res.__custombody__));
-morgan.token("user", (req, _res) => `user-${req.cookies?.["user"]}`);
 
 // Middlewearesp
 app.use(
@@ -39,7 +42,7 @@ app.use(
 			tokens.status(req, res),
 			tokens.body(req, res),
 			tokens.queryParam(req, res),
-			tokens.user(req, res),
+			tokens.inpulseRecorder(req, res),
 			tokens["res-body"](req, res),
 			tokens["response-time"](req, res),
 			"ms",

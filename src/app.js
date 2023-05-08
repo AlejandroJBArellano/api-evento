@@ -184,7 +184,7 @@ app.post("/tag_id-user", async (req, res) => {
 		res.json({
 			...newBadgeBonding._doc,
 			countTagId: tag_ids.length,
-			lastTagCreatedAt: newBadgeBonding.toObject().createdAt,
+			lastTagCreatedAt: newBadgeBonding.toObject().updatedAt,
 		});
 	} catch (error) {
 		console.log(error);
@@ -903,10 +903,6 @@ app.post("/login", async (req, res) => {
 		});
 	}
 
-	res.cookie("user", recorder._id, {
-		path: "/",
-	});
-
 	return res.status(200).json({
 		data: recorder,
 		success: true,
@@ -1007,7 +1003,7 @@ app.get("/attendees", async (req, res) => {
 						$in: users_ids,
 					},
 				},
-				"tag_id user_id createdAt delivered"
+				"tag_id user_id updatedAt delivered"
 			);
 
 			// console.log("tag ids searchComposite", tag_ids)
@@ -1017,7 +1013,7 @@ app.get("/attendees", async (req, res) => {
 					return userTagId.user_id === user._id.toString();
 				});
 
-				const hasSomeDeliveredTag = tag_ids.some(
+				const hasSomeDeliveredTag = userTagIds.some(
 					(userTagId) => userTagId.delivered
 				);
 
@@ -1028,9 +1024,9 @@ app.get("/attendees", async (req, res) => {
 					lastTagCreatedAt: new Date(
 						userTagIds.reduce(
 							(acc, curr) =>
-								new Date(acc) > new Date(curr.createdAt)
+								new Date(acc) > new Date(curr.updatedAt)
 									? new Date(acc)
-									: new Date(curr.createdAt),
+									: new Date(curr.updatedAt),
 							undefined
 						)
 					),
@@ -1804,65 +1800,6 @@ app.get("/delivered-graphic", async (req, res) => {
 					as: "tags",
 				},
 			},
-			// {
-			// 	$addFields: {
-			// 		delivered: {
-			// 			$anyElementTrue: {
-			// 				$map: {
-			// 					input: "$tags",
-			// 					as: "tag",
-			// 					in: "$$tag.delivered",
-			// 				},
-			// 			},
-			// 		},
-			// 	},
-			// },
-			// {
-			// 	$addFields: {
-			// 		has_tags: {
-			// 			$gt: [{ $size: "$tags" }, 0],
-			// 		},
-			// 		has_delivered_tags: {
-			// 			$anyElementTrue: {
-			// 				$map: {
-			// 					input: "$tags",
-			// 					as: "tag",
-			// 					in: "$$tag.delivered",
-			// 				},
-			// 			},
-			// 		},
-			// 	},
-			// },
-			// {
-			// 	$addFields: {
-			// 		user_type: {
-			// 			$switch: {
-			// 				branches: [
-			// 					{
-			// 						case: { $not: "$has_tags" },
-			// 						then: "no_tags",
-			// 					},
-			// 					{
-			// 						case: { $not: "$has_delivered_tags" },
-			// 						then: "tags_without_delivered",
-			// 					},
-			// 				],
-			// 				default: "tags_with_delivered",
-			// 			},
-			// 		},
-			// 	},
-			// },
-			// {
-			// 	$group: {
-			// 		_id: "$user_type",
-			// 		users: {
-			// 			$push: {
-			// 				_id: "$_id",
-			// 				name: "$name",
-			// 			},
-			// 		},
-			// 	},
-			// },
 			{
 				$addFields: {
 					has_tags: {
@@ -1898,8 +1835,12 @@ app.get("/delivered-graphic", async (req, res) => {
 									case: { $eq: ["$has_delivered_tags", 0] },
 									then: "tags_without_delivered",
 								},
+								{
+									case: { $gt: ["$has_delivered_tags", 0] },
+									then: "tags_with_delivered",
+								},
 							],
-							default: "tags_with_delivered",
+							// default: "tags_with_delivered",
 						},
 					},
 				},
@@ -1918,7 +1859,6 @@ app.get("/delivered-graphic", async (req, res) => {
 			{
 				$project: {
 					_id: "$_id",
-					user_type: 1,
 					user_count: { $size: "$users" },
 				},
 			},
@@ -1932,11 +1872,40 @@ app.get("/delivered-graphic", async (req, res) => {
 
 app.get("/delivered-status", async (req, res) => {
 	try {
-		const { delivered, skip, limit } = req.query;
+		let { delivered, skip, limit } = req.query;
 
 		if (!delivered) {
 			throw new Error("No hay delivered status");
 		}
+
+		if (Array.isArray(delivered)) {
+			delivered = delivered.map((d) => d.toLowerCase());
+		} else {
+			delivered = [delivered.toLowerCase()];
+		}
+
+		const matchQuery = [];
+
+		delivered.forEach((d) => {
+			if (d === "yes") {
+				matchQuery.push({ "tags.delivered": true });
+			} else if (d === "no") {
+				matchQuery.push({
+					$and: [
+						{
+							tags: {
+								$exists: true,
+								$ne: [],
+								$size: {
+									$gt: 0,
+								},
+							},
+						},
+						{ "tags.delivered": { $exists: false } },
+					],
+				});
+			}
+		});
 
 		const aggregation = [
 			{
@@ -1984,103 +1953,94 @@ app.get("/delivered-status", async (req, res) => {
 					lastTagCreatedAt: { $max: "$timestamps" },
 				},
 			},
+			{
+				$match: { $or: matchQuery },
+			},
+			{
+				$skip: parseInt(skip),
+			},
+			{
+				$limit: parseInt(limit),
+			},
 		];
-
-		if (delivered === "yes") {
-			aggregation.push({
-				$match: {
-					"tags.delivered": true,
-				},
-			});
-		} else if (delivered === "no") {
-			aggregation.push({
-				$match: {
-					$and: [
-						{ tags: { $exists: true, $ne: [] } },
-						{ "tags.delivered": { $exists: false } },
-					],
-				},
-			});
-		}
-
-		aggregation.push({
-			$skip: parseInt(skip),
-		});
-
-		aggregation.push({
-			$limit: parseInt(limit),
-		});
 
 		const attendees = await User.aggregate(aggregation);
 
 		res.status(200).json({
 			data: attendees,
+			count: attendees.length,
 			success: true,
 		});
 	} catch (error) {
 		console.log(error);
 		res.status(500).json({
 			error,
+			success: false,
 		});
 	}
 });
 
-app.get("/delivered-count", async (req, res) => {
-	try {
-		const pipeline = [
-			{
-				$addFields: {
-					userId: { $toString: "$_id" },
-				},
-			},
-			{
-				$lookup: {
-					from: "usertagids",
-					localField: "userId",
-					foreignField: "user_id",
-					as: "tags",
-				},
-			},
-			{
-				$addFields: {
-					countTagId: { $size: "$tags" },
-					hasDeliveredTag: {
-						$in: [true, "$tags.delivered"],
-					},
-				},
-			},
-			{
-				$group: {
-					_id: null,
-					YES: {
-						$sum: {
-							$cond: {
-								if: "$hasDeliveredTag",
-								then: 1,
-								else: 0,
-							},
-						},
-					},
-					NO: {
-						$sum: {
-							$cond: {
-								if: { $gt: ["$countTagId", 0] },
-								then: 1,
-								else: 0,
-							},
-						},
-					},
-				},
-			},
-		];
+// TODO: resolve the bug
 
-		const result = await User.aggregate(pipeline);
+// app.get("/delivered-count", async (req, res) => {
+// 	try {
+// 		const pipeline = [
+// 			{
+// 				$addFields: {
+// 					userId: { $toString: "$_id" },
+// 				},
+// 			},
+// 			{
+// 				$lookup: {
+// 					from: "usertagids",
+// 					localField: "userId",
+// 					foreignField: "user_id",
+// 					as: "tags",
+// 				},
+// 			},
+// 			{
+// 				$addFields: {
+// 					countTagId: { $size: "$tags" },
+// 					hasDeliveredTag: {
+// 						$in: [true, "$tags.delivered"],
+// 					},
+// 					has_tags: {
+// 						$cond: [{ $gt: [{ $size: "$tags" }, 0] }, 1, 0],
+// 					},
+// 				},
+// 			},
+// 			{
+// 				$group: {
+// 					_id: null,
+// 					YES: {
+// 						$sum: {
+// 							$cond: {
+// 								if: "$hasDeliveredTag",
+// 								then: 1,
+// 								else: 0,
+// 							},
+// 						},
+// 					},
+// 					NO: {
+// 						$sum: {
+// 							$cond: {
+// 								if: { $gt: ["$countTagId", 0] },
+// 								then: 1,
+// 								else: 0,
+// 							},
+// 						},
+// 					},
+// 				},
+// 			},
+// 		];
 
-		res.json({ data: result[0], success: true });
-	} catch (error) {
-		console.error(error);
-		res.status(500).send("Server Error");
-	}
-});
+// 		const result = await User.aggregate(pipeline);
+
+// 		res.json({ data: result[0], success: true });
+// 	} catch (error) {
+// 		console.error(error);
+// 		res.status(500).send("Server Error");
+// 	}
+// });
 
 module.exports = app;

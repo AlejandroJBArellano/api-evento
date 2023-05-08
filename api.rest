@@ -234,8 +234,8 @@ GET http://localhost:3300/attendees-table?searchComposite=alejandro
 GET http://localhost:3300/delivered-graphic
 
 ###
-GET http://localhost:3300/delivered-status?delivered=yes&skip=0&limit=20
-###
-GET http://localhost:3300/delivered-count
+GET http://localhost:3300/delivered-status?delivered=yes&skip=0&limit=50
+# ###
+# GET http://localhost:3300/delivered-count
 ###
 GET http://localhost:3300/
