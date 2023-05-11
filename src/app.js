@@ -4,6 +4,12 @@ const app = Router();
 const axios = require("axios");
 const getExhibitors = require("./exportingDatabase/getExhibitors");
 const getUsers = require("./exportingDatabase/getUsers");
+const XLSX = require("xlsx");
+const multer = require("multer");
+const storage = multer.memoryStorage();
+const upload = multer({ storage: storage });
+// methods
+const attendeesMethods = require("./handlers/attendees");
 const questionnairesMethods = require("./handlers/questionnaires");
 // Models
 const { User } = require("./models/User");
@@ -18,15 +24,6 @@ const Recorder = require("./models/Recorder");
 const Answers = require("./models/Answers");
 const Event = require("./models/Event");
 const diacriticSensitiveRegex = require("./utils/diacriticSensitiveRegex");
-const { user } = require("./exportingDatabase/keys");
-const XLSX = require("xlsx");
-const multer = require("multer");
-const storage = multer.memoryStorage();
-const upload = multer({ storage: storage });
-const fs = require("fs");
-const { parse } = require("csv-parse");
-const { Readable } = require("stream");
-const attendeesMethods = require("./handlers/attendees");
 
 // Messages
 const message = "Success";
