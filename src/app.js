@@ -17,7 +17,6 @@ const Admonition = require("./models/Admonition");
 const Recorder = require("./models/Recorder");
 const Answers = require("./models/Answers");
 const Event = require("./models/Event");
-const ReplacementReason = require("./models/ReplacementReason");
 const diacriticSensitiveRegex = require("./utils/diacriticSensitiveRegex");
 const { user } = require("./exportingDatabase/keys");
 const XLSX = require("xlsx");
@@ -912,27 +911,6 @@ app.post("/login", async (req, res) => {
 
 app.get("/logout", async (req, res) => {
 	res.clearCookie("user");
-});
-
-app.post("/replacement", async (req, res) => {
-	try {
-		const newReplacement = new ReplacementReason({
-			comment: req.body.comment,
-			reason: req.body.reason,
-		});
-
-		await newReplacement.save();
-
-		return res.status(200).json({
-			data: newReplacement,
-			success: true,
-		});
-	} catch (error) {
-		res.status(500).json({
-			error,
-			success: false,
-		});
-	}
 });
 
 app.get("/attendees", attendeesMethods.get);
