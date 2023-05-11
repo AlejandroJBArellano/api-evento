@@ -178,6 +178,36 @@ const attendeesMethods = {
 			});
 		}
 	},
+	getById: async (req, res) => {
+		try {
+			const { id } = req.params;
+			const user = await User.findById(id);
+
+			if (!user) {
+				res.json({});
+				return;
+			}
+
+			res.json(user);
+			return;
+		} catch (error) {
+			console.log(error);
+			res.status(500).json({
+				mensaje: "Ocurrió un error. Vuelve a intentarlo",
+			});
+		}
+	},
+	editById: async (req, res) => {
+		try {
+			User.findByIdAndUpdate(req.params.id, req.body, {
+				returnDocument: "after",
+			})
+				.then((e) => res.status(200).json(e))
+				.catch((err) => res.status(500).json(err));
+		} catch (error) {
+			res.status(500).json(error);
+		}
+	},
 };
 
 module.exports = attendeesMethods;

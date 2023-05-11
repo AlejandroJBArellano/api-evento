@@ -127,37 +127,9 @@ app.get("/users", async (req, res) => {
 	}
 });
 
-app.get("/user/:id", async (req, res) => {
-	try {
-		const { id } = req.params;
-		const user = await User.findById(id);
-		// If not user found, it returns an empty object
-		if (!user) {
-			res.json({});
-			return;
-		}
+app.get("/user/:id", attendeesMethods.getById);
 
-		res.json(user);
-		return;
-	} catch (error) {
-		console.log(error);
-		res.status(500).json({
-			mensaje: "Ocurrió un error. Vuelve a intentarlo",
-		});
-	}
-});
-
-app.put("/user/:id", async (req, res) => {
-	try {
-		User.findByIdAndUpdate(req.params.id, req.body, {
-			returnDocument: "after",
-		})
-			.then((e) => res.status(200).json(e))
-			.catch((err) => res.status(500).json(err));
-	} catch (error) {
-		res.status(500).json(error);
-	}
-});
+app.put("/user/:id", attendeesMethods.editById);
 
 app.post("/tag_id-user", async (req, res) => {
 	try {
@@ -205,62 +177,6 @@ app.post("/tag_id-user", async (req, res) => {
 			success: false,
 		});
 	}
-	// try {
-	//     User.findById(req.body.id)
-	//         .then(async (respuesta) => {
-	//             if(respuesta){
-	//                 var target = {};
-	//                 //TODO: not user found
-	//                 for (var i in respuesta._doc) {
-	//                     if (["_id"].indexOf(i) >= 0) continue;
-	//                     if (!Object.prototype.hasOwnProperty.call(respuesta._doc, i)) continue;
-	//                     target[i] = respuesta._doc[i];
-	//                 }
-
-	//                 const newUserTagId = new UserTagId({
-	//                     tag_id: req.body.tag_id,
-	//                     user_id:respuesta._id,
-	//                     ...target
-	//                 })
-
-	//                 try{
-	//                     newUserTagId.tag_id=req.body.tag_id
-	//                     console.log("newUserTagId",newUserTagId)
-	//                     await newUserTagId.save()
-	//                     const tag_ids = await UserTagId.find({user_id: respuesta._id})
-
-	//                     res.json({...newUserTagId._doc,
-	//                         countTagId: tag_ids.length
-	//                     })
-	//                 }catch(err){
-	//                     console.log(err)
-	//                     res.status(500).json({error:err});
-	//                 }
-	//             } else {
-	//                 const respuesta = {
-	//                     tag_id: req.body.tag_id,
-	//                     user_id: "_desconocido",
-	//                     first_name: "_desconocido",
-	//                     last_name: "_desconocido",
-	//                     badge: ""
-	//                 }
-	//                 try {
-	//                     const newUserTagId = new UserTagId(respuesta);
-	//                     await newUserTagId.save()
-	//                     res.json(newUserTagId)
-	//                     return;
-	//                 } catch (error) {
-	//                     console.log(err)
-	//                     res.status(500).json(error)
-	//                     return;
-	//                 }
-	//             }
-	//         })
-	// } catch (error) {
-	//     console.log(err)
-	//     res.status(500).json(error)
-	//     return;
-	// }
 });
 
 app.get("/tag_id-user", async (req, res) => {
