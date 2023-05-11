@@ -23,6 +23,7 @@ const Admonition = require("./models/Admonition");
 const Recorder = require("./models/Recorder");
 const Answers = require("./models/Answers");
 const Event = require("./models/Event");
+//utils
 const diacriticSensitiveRegex = require("./utils/diacriticSensitiveRegex");
 
 // Messages
@@ -32,13 +33,27 @@ let membershipsTypes = [];
 let ticketTypes = [];
 
 app.get("/", async (req, res) => {
-	const events = await Event.find();
-	res.status(200).json(events[0]);
+	try {
+		const events = await Event.find();
+		res.status(200).json(events[0]);
+	} catch (error) {
+		res.status(500).json({
+			error,
+			success: false,
+		});
+	}
 });
 
 app.get("/config-tags", async (req, res) => {
-	const config = await ConfigTags.find();
-	res.json(config);
+	try {
+		const config = await ConfigTags.find();
+		res.status(200).json(config);
+	} catch (error) {
+		res.status(500).json({
+			error,
+			success: false,
+		});
+	}
 });
 
 app.post("/new-user", async (req, res) => {
@@ -61,7 +76,7 @@ app.post("/new-user", async (req, res) => {
 
 app.get("/users", async (req, res) => {
 	try {
-		let query = {};
+		const query = {};
 		if (req.query.user_id && req.query.user_id.length > 0) {
 			query["_id"] = req.query.user_id;
 			console.log(query, query);
