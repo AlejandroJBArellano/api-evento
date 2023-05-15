@@ -1716,6 +1716,8 @@ app.get("/delivered-status", async (req, res) => {
 	}
 });
 
+app.get("/attendees-to-report", attendeesMethods.getAttendeesToReport);
+
 // TODO: resolve the bug
 
 // app.get("/delivered-count", async (req, res) => {

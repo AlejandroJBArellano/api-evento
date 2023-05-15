@@ -229,6 +229,8 @@ GET http://localhost:3300/tag_id-user?tag_id=alejandro HTTP/1.1
 
 ###
 GET http://localhost:3300/attendees-table?searchComposite=alejandro
+###
+GET http://localhost:3300/attendees-to-report?badge=Fuerza G Lagarto&delivered=yes&countTagId=1&skip=0&limit=50&countTagId=0
 
 ###
 GET http://localhost:3300/delivered-graphic

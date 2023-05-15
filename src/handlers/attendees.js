@@ -1,3 +1,4 @@
+const Event = require("../models/Event");
 const { User } = require("../models/User");
 const UserTagId = require("../models/UserTagId");
 const diacriticSensitiveRegex = require("../utils/diacriticSensitiveRegex");
@@ -207,6 +208,141 @@ const attendeesMethods = {
 		} catch (error) {
 			res.status(500).json(error);
 		}
+	},
+	getAttendeesToReport: async (req, res) => {
+		let { delivered, badge, countTagId } = req.query;
+
+		const aggregation = [
+			{
+				$addFields: {
+					userId: { $toString: "$_id" },
+				},
+			},
+			{
+				$lookup: {
+					from: "usertagids",
+					localField: "userId",
+					foreignField: "user_id",
+					as: "tags",
+				},
+			},
+			{
+				$addFields: {
+					countTagId: { $size: "$tags" },
+					delivered: {
+						$cond: [
+							{
+								$anyElementTrue: {
+									$map: {
+										input: "$tags",
+										as: "tag",
+										in: "$$tag.delivered",
+									},
+								},
+							},
+							true,
+							false,
+						],
+					},
+					timestamps: {
+						$map: {
+							input: "$tags",
+							as: "item",
+							in: "$$item.updatedAt",
+						},
+					},
+				},
+			},
+			{
+				$addFields: {
+					lastTagCreatedAt: { $max: "$timestamps" },
+				},
+			},
+		];
+
+		const $match = {};
+
+		if (delivered) {
+			if (Array.isArray(delivered)) {
+				delivered = delivered.map((d) => d.toLowerCase());
+			} else {
+				delivered = [delivered.toLowerCase()];
+			}
+
+			const matchQuery = delivered.map((d) => {
+				if (d === "yes") {
+					return { "tags.delivered": true };
+				} else if (d === "no") {
+					return {
+						$and: [
+							{
+								tags: {
+									$exists: true,
+									$ne: [],
+								},
+							},
+							{ "tags.delivered": { $exists: false } },
+						],
+					};
+				}
+			});
+			$match.$or = matchQuery;
+		}
+
+		if (badge) {
+			if (Array.isArray(badge)) {
+				$match.badge = {
+					$in: badge,
+				};
+			} else {
+				$match.badge = badge;
+			}
+		}
+
+		if (countTagId) {
+			if (!Array.isArray(countTagId)) {
+				countTagId = [countTagId];
+			}
+
+			const matchQuery = {
+				$or: [],
+			};
+
+			if (countTagId.includes("2")) {
+				matchQuery.$or.push({ countTagId: { $gte: 2 } });
+			}
+			if (countTagId.includes("1") || countTagId.includes("0")) {
+				matchQuery.$or.push({
+					countTagId: {
+						$in: [
+							...countTagId
+								.map((e) => parseInt(e))
+								.filter((e) => e !== 2),
+						],
+					},
+				});
+			}
+
+			if (!$match.$and) {
+				$match.$and = [matchQuery];
+			} else {
+				$match.$and.push(matchQuery);
+			}
+		}
+
+		aggregation.push({ $match });
+
+		const attendees = await User.aggregate(aggregation);
+
+		res.status(200).json({
+			data: {
+				attendees: attendees.slice(
+					parseInt(req.query.skip),
+					parseInt(req.query.limit)
+				),
+				count: attendees.length,
+			},
+		});
 	},
 };
 
